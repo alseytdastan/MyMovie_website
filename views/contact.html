@@ -4,50 +4,214 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Contact | MyMovie</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/main.css" />
+  <style>
+    .contact-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color var(--transition-fast);
+    }
+    
+    .form-input:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+    
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .form-textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+    
+    .contact-info {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+    
+    .contact-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+    
+    .contact-info-item {
+      text-align: center;
+    }
+    
+    .contact-info-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .contact-info-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    
+    .contact-info-text {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Contact MyMovie</h1>
-    <p>Have feedback or ideas? Send us a message.</p>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </nav>
-  </header>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">My<span>Movie</span></span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link">Films</a>
+        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link">Profile</a>
+      </div>
+      
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Search films..." onkeypress="if(event.key==='Enter')window.location.href='/films?search='+encodeURIComponent(this.value)" />
+      </div>
+      
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon" title="About">?</a>
+      </div>
+    </div>
+  </nav>
 
-  <main>
-    <section class="card">
-      <h2>Send a Message</h2>
-      <form action="/contact" method="POST" class="contact-form">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required />
+  <!-- Page Header -->
+  <section class="hero" style="padding: 3rem 0;">
+    <div class="container">
+      <h1>Contact Us</h1>
+      <p>Have feedback or ideas? We'd love to hear from you.</p>
+    </div>
+  </section>
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required />
-
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="5" required></textarea>
-
-        <button type="submit">Submit</button>
+  <!-- Main Content -->
+  <main class="page-content">
+    <div class="container">
+      
+      <!-- Contact Form -->
+      <form action="/contact" method="POST" class="contact-form" id="contact-form">
+        <div class="form-group">
+          <label for="name" class="form-label">Name</label>
+          <input type="text" id="name" name="name" class="form-input" placeholder="Your name" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" id="email" name="email" class="form-input" placeholder="your.email@example.com" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="message" class="form-label">Message</label>
+          <textarea id="message" name="message" class="form-textarea" placeholder="What's on your mind?" required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
       </form>
-    </section>
+
+      <!-- Contact Info -->
+      <div class="contact-info">
+        <h2 class="section-title text-center">Other Ways to Reach Us</h2>
+        <div class="contact-info-grid">
+          <div class="contact-info-item">
+            <div class="contact-info-icon">📧</div>
+            <div class="contact-info-title">Email</div>
+            <div class="contact-info-text">se2424@gmail.com</div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-info-icon">🌐</div>
+            <div class="contact-info-title">Website</div>
+            <div class="contact-info-text">mymovie.app</div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-info-icon">📍</div>
+            <div class="contact-info-title">Location</div>
+            <div class="contact-info-text">Astana, Kazakhstan</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 
-  <script>
-  document.querySelector(".contact-form").addEventListener("submit", function (e) {
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const message = document.getElementById("message").value.trim();
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">&copy; 2026 MyMovie</p>
+        <div class="footer-links">
+          <a href="/about" class="footer-link">About</a>
+          <a href="/contact" class="footer-link">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-    if (!name || !email || !message) {
-      e.preventDefault();
-      alert("Please fill in all fields before submitting.");
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    document.getElementById('contact-form').addEventListener('submit', function(e) {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const message = document.getElementById('message').value.trim();
+
+      if (!name || !email || !message) {
+        e.preventDefault();
+        showToast('Please fill in all fields', 'error');
+      }
+    });
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
     }
-  });
   </script>
 </body>
 </html>
-
-

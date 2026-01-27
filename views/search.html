@@ -3,27 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Search | MyMovie</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>Redirecting... | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+  <script>
+    // Redirect to new films page with search
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q');
+    if (query) {
+      window.location.replace('/films?search=' + encodeURIComponent(query));
+    } else {
+      window.location.replace('/films');
+    }
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Search Movies</h1>
-    <p>Find your favorite movies and discover new ones.</p>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </nav>
-  </header>
-
-  <main>
-    <section class="card">
-      <h2>Search Results</h2>
-      <p>This is a placeholder for the search functionality. In the future, this page will display search results based on your query.</p>
-      <p><strong>Query parameter:</strong> The search query parameter "q" has been received and validated.</p>
-    </section>
-  </main>
+  <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="loading"><div class="spinner"></div></div>
+    <p style="margin-left: 1rem;">Redirecting...</p>
+  </div>
 </body>
 </html>
-

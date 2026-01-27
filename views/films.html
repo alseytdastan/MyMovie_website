@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Films | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">My<span>Movie</span></span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link active">Films</a>
+        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link">Profile</a>
+      </div>
+      
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Search films..." />
+      </div>
+      
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon" title="About">?</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="hero" style="padding: 2rem 0;">
+    <div class="container">
+      <h1>Films</h1>
+      <p>Browse our collection of movies</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="page-content">
+    <div class="container">
+      
+      <!-- Filters -->
+      <div class="filters">
+        <div class="filter-group">
+          <label class="filter-label">Search</label>
+          <input type="text" id="filter-search" class="filter-input" placeholder="Film title..." />
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Genre</label>
+          <select id="filter-genre" class="filter-select">
+            <option value="">All Genres</option>
+            <option value="Action">Action</option>
+            <option value="Adventure">Adventure</option>
+            <option value="Animation">Animation</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Crime">Crime</option>
+            <option value="Drama">Drama</option>
+            <option value="Fantasy">Fantasy</option>
+            <option value="Horror">Horror</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Romance">Romance</option>
+            <option value="Sci-Fi">Sci-Fi</option>
+            <option value="Thriller">Thriller</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Year</label>
+          <select id="filter-year" class="filter-select">
+            <option value="">All Years</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <select id="filter-sort" class="filter-select">
+            <option value="year:desc">Newest First</option>
+            <option value="year:asc">Oldest First</option>
+            <option value="title:asc">Title A-Z</option>
+            <option value="title:desc">Title Z-A</option>
+          </select>
+        </div>
+        <div class="filter-group" style="align-self: flex-end;">
+          <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
+          <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Results count -->
+      <p class="section-title" id="results-count" style="border: none; margin-top: 1rem;">Loading films...</p>
+
+      <!-- Films Grid -->
+      <div class="poster-grid large" id="films-grid">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">&copy; 2026 MyMovie</p>
+        <div class="footer-links">
+          <a href="/about" class="footer-link">About</a>
+          <a href="/contact" class="footer-link">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    const API_BASE = '/api/movies';
+    
+    // Local storage for watchlist and likes
+    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+    let likes = JSON.parse(localStorage.getItem('likes') || '[]');
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+      populateYearFilter();
+      parseUrlParams();
+      loadFilms();
+      
+      // Add event listeners for filters
+      document.getElementById('filter-search').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') applyFilters();
+      });
+      
+      document.getElementById('search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('filter-search').value = e.target.value;
+          applyFilters();
+        }
+      });
+    });
+
+    // Populate year filter
+    function populateYearFilter() {
+      const yearSelect = document.getElementById('filter-year');
+      const currentYear = new Date().getFullYear();
+      
+      for (let year = currentYear; year >= 1900; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    // Parse URL parameters
+    function parseUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      
+      if (params.has('genre')) {
+        document.getElementById('filter-genre').value = params.get('genre');
+      }
+      if (params.has('year')) {
+        document.getElementById('filter-year').value = params.get('year');
+      }
+      if (params.has('search')) {
+        document.getElementById('filter-search').value = params.get('search');
+        document.getElementById('search-input').value = params.get('search');
+      }
+      if (params.has('sort')) {
+        document.getElementById('filter-sort').value = params.get('sort');
+      }
+    }
+
+    // Load films with filters
+    async function loadFilms() {
+      const grid = document.getElementById('films-grid');
+      const countEl = document.getElementById('results-count');
+      
+      grid.innerHTML = '<div class="loading" style="grid-column: 1/-1;"><div class="spinner"></div></div>';
+      
+      try {
+        const params = new URLSearchParams();
+        
+        const search = document.getElementById('filter-search').value.trim();
+        const genre = document.getElementById('filter-genre').value;
+        const year = document.getElementById('filter-year').value;
+        const sort = document.getElementById('filter-sort').value;
+        
+        if (search) params.append('title', search);
+        if (genre) params.append('genre', genre);
+        if (year) params.append('year', year);
+        if (sort) params.append('sort', sort);
+        
+        const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
+        const response = await fetch(url);
+        const movies = await response.json();
+        
+        countEl.textContent = `${movies.length} film${movies.length !== 1 ? 's' : ''} found`;
+        
+        if (movies.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+              <div class="empty-state-icon">🎬</div>
+              <h3>No films found</h3>
+              <p>Try adjusting your filters</p>
+            </div>
+          `;
+          return;
+        }
+        
+        grid.innerHTML = movies.map(movie => createPosterCard(movie)).join('');
+      } catch (error) {
+        console.error('Error loading films:', error);
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Failed to load films</h3>
+            <p>Please check your connection and try again</p>
+          </div>
+        `;
+        countEl.textContent = 'Error loading films';
+      }
+    }
+
+    // Create poster card HTML
+    function createPosterCard(movie) {
+      const isLiked = likes.includes(movie._id);
+      const isWatchlisted = watchlist.includes(movie._id);
+      
+      const posterContent = movie.poster || movie.posterUrl 
+        ? `<img src="${movie.poster || movie.posterUrl}" alt="${escapeHtml(movie.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'placeholder\\'>${getInitials(movie.title)}</div>'">`
+        : `<div class="placeholder">${getInitials(movie.title)}</div>`;
+      
+      return `
+        <a href="/films/${movie._id}" class="poster-card">
+          ${posterContent}
+          <div class="poster-overlay">
+            <span class="poster-title">${escapeHtml(movie.title)}</span>
+            <span class="poster-year">${movie.year || 'N/A'} ${movie.genre ? '• ' + escapeHtml(movie.genre) : ''}</span>
+          </div>
+          <div class="poster-actions">
+            <button class="poster-action ${isWatchlisted ? 'watchlisted' : ''}" 
+                    onclick="event.preventDefault(); toggleWatchlist('${movie._id}')" 
+                    title="${isWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">
+              ${isWatchlisted ? '✓' : '+'}
+            </button>
+            <button class="poster-action ${isLiked ? 'liked' : ''}" 
+                    onclick="event.preventDefault(); toggleLike('${movie._id}')" 
+                    title="${isLiked ? 'Unlike' : 'Like'}">
+              ♥
+            </button>
+          </div>
+        </a>
+      `;
+    }
+
+    // Get initials from title
+    function getInitials(title) {
+      return title.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+    }
+
+    // Apply filters
+    function applyFilters() {
+      const params = new URLSearchParams();
+      
+      const search = document.getElementById('filter-search').value.trim();
+      const genre = document.getElementById('filter-genre').value;
+      const year = document.getElementById('filter-year').value;
+      const sort = document.getElementById('filter-sort').value;
+      
+      if (search) params.append('search', search);
+      if (genre) params.append('genre', genre);
+      if (year) params.append('year', year);
+      if (sort) params.append('sort', sort);
+      
+      const newUrl = params.toString() ? `/films?${params}` : '/films';
+      window.history.pushState({}, '', newUrl);
+      
+      loadFilms();
+    }
+
+    // Clear filters
+    function clearFilters() {
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-genre').value = '';
+      document.getElementById('filter-year').value = '';
+      document.getElementById('filter-sort').value = 'year:desc';
+      document.getElementById('search-input').value = '';
+      
+      window.history.pushState({}, '', '/films');
+      loadFilms();
+    }
+
+    // Toggle watchlist
+    function toggleWatchlist(movieId) {
+      const index = watchlist.indexOf(movieId);
+      if (index > -1) {
+        watchlist.splice(index, 1);
+        showToast('Removed from watchlist');
+      } else {
+        watchlist.push(movieId);
+        showToast('Added to watchlist');
+      }
+      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+      loadFilms();
+    }
+
+    // Toggle like
+    function toggleLike(movieId) {
+      const index = likes.indexOf(movieId);
+      if (index > -1) {
+        likes.splice(index, 1);
+        showToast('Removed like');
+      } else {
+        likes.push(movieId);
+        showToast('Liked!', 'success');
+      }
+      localStorage.setItem('likes', JSON.stringify(likes));
+      loadFilms();
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

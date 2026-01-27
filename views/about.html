@@ -4,37 +4,159 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>About | MyMovie</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/main.css" />
 </head>
 <body>
-  <header>
-    <h1>About MyMovie</h1>
-    <p>Learn more about our team and why we built this project.</p>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </nav>
-  </header>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">My<span>Movie</span></span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link">Films</a>
+        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link">Profile</a>
+      </div>
+      
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Search films..." onkeypress="if(event.key==='Enter')window.location.href='/films?search='+encodeURIComponent(this.value)" />
+      </div>
+      
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon active" title="About">?</a>
+      </div>
+    </div>
+  </nav>
 
-  <main>
-    <section class="card">
-      <h2>Our Mission</h2>
-      <p>
-        We want to make discovering, organizing, and sharing movies effortless.
-        MyMovie will help you keep track of what you love and find your next watch.
-      </p>
-    </section>
+  <!-- Page Header -->
+  <section class="hero" style="padding: 3rem 0;">
+    <div class="container">
+      <h1>About MyMovie</h1>
+      <p>A movie tracking application</p>
+    </div>
+  </section>
 
-    <section class="card">
-      <h2>Team</h2>
-      <ul>
-        <li>Dastan Alseit – SE-2424</li>
-        <li>Akylbek Sabyrzhan – SE-2424</li>
-      </ul>
-    </section>
+  <!-- Main Content -->
+  <main class="page-content">
+    <div class="container">
+      
+      <!-- Mission -->
+      <section class="about-section">
+        <h2 class="section-title">Our Mission</h2>
+        <p style="font-size: 1.125rem; line-height: 1.8; max-width: 800px;">
+          MyMovie is designed to help movie enthusiasts discover, track, and share their film experiences. 
+          We've built a platform that makes managing your movie collection effortless and enjoyable.
+        </p>
+      </section>
+
+      <!-- Features -->
+      <section class="about-section">
+        <h2 class="section-title">Features</h2>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <div class="tech-icon">🎬</div>
+            <div class="tech-name">Browse Films</div>
+            <div class="tech-desc">Explore our curated collection</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">📋</div>
+            <div class="tech-name">Watchlist</div>
+            <div class="tech-desc">Save films for later</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">♥</div>
+            <div class="tech-name">Like Films</div>
+            <div class="tech-desc">Show love for your favorites</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🔍</div>
+            <div class="tech-name">Search & Filter</div>
+            <div class="tech-desc">Find exactly what you want</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tech Stack -->
+      <section class="about-section">
+        <h2 class="section-title">Tech Stack</h2>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <div class="tech-icon">⚡</div>
+            <div class="tech-name">Node.js</div>
+            <div class="tech-desc">Runtime Environment</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🚀</div>
+            <div class="tech-name">Express.js</div>
+            <div class="tech-desc">Web Framework</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🍃</div>
+            <div class="tech-name">MongoDB</div>
+            <div class="tech-desc">Database</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🎨</div>
+            <div class="tech-name">CSS3</div>
+            <div class="tech-desc">Custom Styling</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">📱</div>
+            <div class="tech-name">Responsive</div>
+            <div class="tech-desc">Mobile-First Design</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🔒</div>
+            <div class="tech-name">RESTful API</div>
+            <div class="tech-desc">Backend Services</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Team -->
+      <section class="about-section">
+        <h2 class="section-title">Team</h2>
+        <div class="tech-stack" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+          <div class="tech-item">
+            <div class="tech-icon">👤</div>
+            <div class="tech-name">Dastan Alseit</div>
+            <div class="tech-desc">SE-2424</div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">👤</div>
+            <div class="tech-name">Akylbek Sabyrzhan</div>
+            <div class="tech-desc">SE-2424</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Links -->
+      <section class="about-section">
+        <h2 class="section-title">Quick Links</h2>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <a href="/films" class="btn btn-primary">Browse Films</a>
+          <a href="/contact" class="btn btn-secondary">Contact Us</a>
+        </div>
+      </section>
+
+    </div>
   </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">&copy; 2026 MyMovie</p>
+        <div class="footer-links">
+          <a href="/about" class="footer-link">About</a>
+          <a href="/contact" class="footer-link">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
-
-

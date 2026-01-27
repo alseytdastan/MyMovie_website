@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Film | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+  <style>
+    .add-form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--bg-secondary);
+      padding: 2rem;
+      border-radius: 8px;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color var(--transition-fast);
+    }
+    
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--accent-green);
+    }
+    
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .form-textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    
+    .btn-submit {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+    }
+
+    .recent-films {
+      margin-top: 3rem;
+    }
+
+    .film-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .film-table th,
+    .film-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .film-table th {
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .film-table tr:hover {
+      background-color: var(--bg-hover);
+    }
+
+    .film-table .poster-thumb {
+      width: 40px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .film-table .poster-placeholder {
+      width: 40px;
+      height: 60px;
+      background: var(--bg-card);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-small {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .sort-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .sort-controls label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .sort-select {
+      padding: 0.5rem 1rem;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">My<span>Movie</span></span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link">Films</a>
+        <a href="/add-film" class="nav-link active">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link">Profile</a>
+      </div>
+      
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Search films..." onkeypress="if(event.key==='Enter')window.location.href='/films?search='+encodeURIComponent(this.value)" />
+      </div>
+      
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon" title="About">?</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <section class="hero" style="padding: 2rem 0;">
+    <div class="container">
+      <h1>Add New Film</h1>
+      <p>Add a film to the database</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="page-content">
+    <div class="container">
+      
+      <!-- Add Film Form -->
+      <form class="add-form" id="add-film-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="title" class="form-label">Title *</label>
+            <input type="text" id="title" name="title" class="form-input" placeholder="Film title" required />
+          </div>
+          <div class="form-group">
+            <label for="year" class="form-label">Year *</label>
+            <input type="number" id="year" name="year" class="form-input" placeholder="2024" min="1800" max="2100" required />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="genre" class="form-label">Genre</label>
+          <select id="genre" name="genre" class="form-select">
+            <option value="">Select genre</option>
+            <option value="Action">Action</option>
+            <option value="Adventure">Adventure</option>
+            <option value="Animation">Animation</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Crime">Crime</option>
+            <option value="Drama">Drama</option>
+            <option value="Fantasy">Fantasy</option>
+            <option value="Horror">Horror</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Romance">Romance</option>
+            <option value="Sci-Fi">Sci-Fi</option>
+            <option value="Thriller">Thriller</option>
+            <option value="Documentary">Documentary</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="poster" class="form-label">Poster URL</label>
+          <input type="url" id="poster" name="poster" class="form-input" placeholder="https://example.com/poster.jpg" />
+          <p class="form-hint">Direct link to the movie poster image</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="description" class="form-label">Description</label>
+          <textarea id="description" name="description" class="form-textarea" placeholder="Brief description of the film..."></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-submit" id="submit-btn">Add Film</button>
+      </form>
+
+      <!-- Recent Films Table -->
+      <section class="recent-films">
+        <h2 class="section-title">All Films</h2>
+        
+        <!-- Sort Controls -->
+        <div class="sort-controls">
+          <label for="sort-select">Sort by:</label>
+          <select id="sort-select" class="sort-select" onchange="loadFilms()">
+            <option value="createdAt:desc">Recently Added</option>
+            <option value="year:desc">Year (Newest)</option>
+            <option value="year:asc">Year (Oldest)</option>
+            <option value="title:asc">Title (A-Z)</option>
+            <option value="title:desc">Title (Z-A)</option>
+          </select>
+          <label for="filter-genre">Genre:</label>
+          <select id="filter-genre" class="sort-select" onchange="loadFilms()">
+            <option value="">All Genres</option>
+            <option value="Action">Action</option>
+            <option value="Adventure">Adventure</option>
+            <option value="Animation">Animation</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Crime">Crime</option>
+            <option value="Drama">Drama</option>
+            <option value="Fantasy">Fantasy</option>
+            <option value="Horror">Horror</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Romance">Romance</option>
+            <option value="Sci-Fi">Sci-Fi</option>
+            <option value="Thriller">Thriller</option>
+            <option value="Documentary">Documentary</option>
+          </select>
+        </div>
+
+        <div id="films-table-container">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">&copy; 2026 MyMovie</p>
+        <div class="footer-links">
+          <a href="/about" class="footer-link">About</a>
+          <a href="/contact" class="footer-link">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    const API_BASE = '/api/movies';
+    let editingId = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFilms();
+    });
+
+    // Load films
+    async function loadFilms() {
+      const container = document.getElementById('films-table-container');
+      const sort = document.getElementById('sort-select').value;
+      const genre = document.getElementById('filter-genre').value;
+      
+      container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      
+      try {
+        const params = new URLSearchParams();
+        if (sort) params.append('sort', sort);
+        if (genre) params.append('genre', genre);
+        
+        const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
+        const response = await fetch(url);
+        const films = await response.json();
+        
+        if (films.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🎬</div>
+              <h3>No films yet</h3>
+              <p>Add your first film using the form above</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = `
+          <table class="film-table">
+            <thead>
+              <tr>
+                <th>Poster</th>
+                <th>Title</th>
+                <th>Year</th>
+                <th>Genre</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${films.map(film => `
+                <tr>
+                  <td>
+                    ${film.poster || film.posterUrl 
+                      ? `<img src="${film.poster || film.posterUrl}" class="poster-thumb" alt="${escapeHtml(film.title)}" onerror="this.outerHTML='<div class=\\'poster-placeholder\\'>${getInitials(film.title)}</div>'">`
+                      : `<div class="poster-placeholder">${getInitials(film.title)}</div>`
+                    }
+                  </td>
+                  <td><a href="/films/${film._id}" style="color: var(--text-primary);">${escapeHtml(film.title)}</a></td>
+                  <td>${film.year || '-'}</td>
+                  <td>${escapeHtml(film.genre || '-')}</td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-secondary btn-small" onclick="editFilm('${film._id}')">Edit</button>
+                      <button class="btn btn-danger btn-small" onclick="deleteFilm('${film._id}')">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        console.error('Error loading films:', error);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Error loading films</h3>
+          </div>
+        `;
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('add-film-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('title').value.trim();
+      const year = document.getElementById('year').value;
+      const genre = document.getElementById('genre').value;
+      const poster = document.getElementById('poster').value.trim();
+      const description = document.getElementById('description').value.trim();
+      
+      if (!title || !year) {
+        showToast('Title and year are required', 'error');
+        return;
+      }
+      
+      const filmData = {
+        title,
+        year: parseInt(year),
+        genre: genre || 'general',
+        poster: poster || null,
+        posterUrl: poster || null,
+        description: description || null
+      };
+      
+      try {
+        const isUpdate = !!editingId;
+        const url = isUpdate ? `${API_BASE}/${editingId}` : API_BASE;
+        const method = isUpdate ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filmData)
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Operation failed');
+        }
+        
+        showToast(isUpdate ? 'Film updated!' : 'Film added!', 'success');
+        resetForm();
+        loadFilms();
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Edit film
+    async function editFilm(id) {
+      try {
+        const response = await fetch(`${API_BASE}/${id}`);
+        const film = await response.json();
+        
+        document.getElementById('title').value = film.title || '';
+        document.getElementById('year').value = film.year || '';
+        document.getElementById('genre').value = film.genre || '';
+        document.getElementById('poster').value = film.poster || film.posterUrl || '';
+        document.getElementById('description').value = film.description || '';
+        
+        editingId = id;
+        document.getElementById('submit-btn').textContent = 'Update Film';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        showToast('Error loading film', 'error');
+      }
+    }
+
+    // Delete film
+    async function deleteFilm(id) {
+      if (!confirm('Are you sure you want to delete this film?')) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete');
+        }
+        
+        showToast('Film deleted', 'success');
+        loadFilms();
+      } catch (error) {
+        showToast('Error deleting film', 'error');
+      }
+    }
+
+    // Reset form
+    function resetForm() {
+      document.getElementById('add-film-form').reset();
+      editingId = null;
+      document.getElementById('submit-btn').textContent = 'Add Film';
+    }
+
+    // Get initials
+    function getInitials(title) {
+      return title.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+    }
+
+    // Show toast
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

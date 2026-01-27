@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">My<span>Movie</span></span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link">Films</a>
+        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link active">Profile</a>
+      </div>
+      
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Search films..." onkeypress="if(event.key==='Enter')window.location.href='/films?search='+encodeURIComponent(this.value)" />
+      </div>
+      
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon" title="About">?</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="page-content">
+    <div class="container">
+      
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <div class="profile-avatar" id="profile-avatar">M</div>
+        <div class="profile-info">
+          <h1 id="profile-name">Movie Enthusiast</h1>
+          <p style="color: var(--text-muted);">Member since 2026</p>
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="liked-count">0</div>
+              <div class="profile-stat-label">Films Liked</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="watchlist-count">0</div>
+              <div class="profile-stat-label">Watchlist</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="liked" onclick="switchTab('liked')">Liked Films</button>
+        <button class="tab" data-tab="watchlist" onclick="switchTab('watchlist')">Watchlist</button>
+      </div>
+
+      <!-- Tab Content: Liked Films -->
+      <div id="liked-content" class="tab-content">
+        <div class="poster-grid large" id="liked-grid">
+          <div class="loading" style="grid-column: 1/-1;"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Watchlist -->
+      <div id="watchlist-content" class="tab-content" style="display: none;">
+        <div class="poster-grid large" id="watchlist-grid">
+          <div class="loading" style="grid-column: 1/-1;"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p class="footer-text">&copy; 2026 MyMovie</p>
+        <div class="footer-links">
+          <a href="/about" class="footer-link">About</a>
+          <a href="/contact" class="footer-link">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    const API_BASE = '/api/movies';
+    
+    // Local storage for watchlist and likes
+    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+    let likes = JSON.parse(localStorage.getItem('likes') || '[]');
+    
+    // Cached movies
+    let allMovies = [];
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+      updateStats();
+      loadAllMovies();
+    });
+
+    // Update stats
+    function updateStats() {
+      document.getElementById('liked-count').textContent = likes.length;
+      document.getElementById('watchlist-count').textContent = watchlist.length;
+    }
+
+    // Load all movies once
+    async function loadAllMovies() {
+      try {
+        const response = await fetch(API_BASE);
+        allMovies = await response.json();
+        
+        loadLikedFilms();
+        loadWatchlistFilms();
+      } catch (error) {
+        console.error('Error loading movies:', error);
+        document.getElementById('liked-grid').innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Failed to load films</h3>
+          </div>
+        `;
+        document.getElementById('watchlist-grid').innerHTML = document.getElementById('liked-grid').innerHTML;
+      }
+    }
+
+    // Load liked films
+    function loadLikedFilms() {
+      const grid = document.getElementById('liked-grid');
+      
+      const likedMovies = likes
+        .map(id => allMovies.find(m => m._id === id))
+        .filter(Boolean);
+      
+      // Clean up likes of non-existent movies
+      if (likedMovies.length !== likes.length) {
+        likes = likedMovies.map(m => m._id);
+        localStorage.setItem('likes', JSON.stringify(likes));
+        updateStats();
+      }
+      
+      if (likedMovies.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">♥</div>
+            <h3>No liked films yet</h3>
+            <p>Like films to see them here!</p>
+            <a href="/films" class="btn btn-primary mt-2">Browse Films</a>
+          </div>
+        `;
+        return;
+      }
+      
+      grid.innerHTML = likedMovies.map(movie => createPosterCard(movie, 'liked')).join('');
+    }
+
+    // Load watchlist films
+    function loadWatchlistFilms() {
+      const grid = document.getElementById('watchlist-grid');
+      
+      const watchlistMovies = watchlist
+        .map(id => allMovies.find(m => m._id === id))
+        .filter(Boolean);
+      
+      // Clean up watchlist of non-existent movies
+      if (watchlistMovies.length !== watchlist.length) {
+        watchlist = watchlistMovies.map(m => m._id);
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        updateStats();
+      }
+      
+      if (watchlistMovies.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">📋</div>
+            <h3>Your watchlist is empty</h3>
+            <p>Add films to your watchlist!</p>
+            <a href="/films" class="btn btn-primary mt-2">Browse Films</a>
+          </div>
+        `;
+        return;
+      }
+      
+      grid.innerHTML = watchlistMovies.map(movie => createPosterCard(movie, 'watchlist')).join('');
+    }
+
+    // Create poster card HTML
+    function createPosterCard(movie, context) {
+      const isLiked = likes.includes(movie._id);
+      const isWatchlisted = watchlist.includes(movie._id);
+      
+      const posterContent = movie.poster || movie.posterUrl 
+        ? `<img src="${movie.poster || movie.posterUrl}" alt="${escapeHtml(movie.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'placeholder\\'>${getInitials(movie.title)}</div>'">`
+        : `<div class="placeholder">${getInitials(movie.title)}</div>`;
+      
+      const removeAction = context === 'liked' 
+        ? `<button class="poster-action liked" onclick="event.preventDefault(); removeLike('${movie._id}')" title="Remove Like">♥</button>`
+        : `<button class="poster-action watchlisted" onclick="event.preventDefault(); removeFromWatchlist('${movie._id}')" title="Remove from Watchlist">✕</button>`;
+      
+      const secondaryAction = context === 'liked'
+        ? `<button class="poster-action ${isWatchlisted ? 'watchlisted' : ''}" onclick="event.preventDefault(); toggleWatchlist('${movie._id}')" title="${isWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">${isWatchlisted ? '✓' : '+'}</button>`
+        : `<button class="poster-action ${isLiked ? 'liked' : ''}" onclick="event.preventDefault(); toggleLike('${movie._id}')" title="${isLiked ? 'Unlike' : 'Like'}">♥</button>`;
+      
+      return `
+        <a href="/films/${movie._id}" class="poster-card">
+          ${posterContent}
+          <div class="poster-overlay">
+            <span class="poster-title">${escapeHtml(movie.title)}</span>
+            <span class="poster-year">${movie.year || 'N/A'}</span>
+          </div>
+          <div class="poster-actions">
+            ${removeAction}
+            ${secondaryAction}
+          </div>
+        </a>
+      `;
+    }
+
+    // Switch tab
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+      });
+      
+      // Update content
+      document.getElementById('liked-content').style.display = tabName === 'liked' ? 'block' : 'none';
+      document.getElementById('watchlist-content').style.display = tabName === 'watchlist' ? 'block' : 'none';
+    }
+
+    // Get initials from title
+    function getInitials(title) {
+      return title.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+    }
+
+    // Remove like
+    function removeLike(movieId) {
+      const index = likes.indexOf(movieId);
+      if (index > -1) {
+        likes.splice(index, 1);
+        localStorage.setItem('likes', JSON.stringify(likes));
+        showToast('Removed like');
+        updateStats();
+        loadLikedFilms();
+        loadWatchlistFilms();
+      }
+    }
+
+    // Toggle like
+    function toggleLike(movieId) {
+      const index = likes.indexOf(movieId);
+      if (index > -1) {
+        likes.splice(index, 1);
+        showToast('Removed like');
+      } else {
+        likes.push(movieId);
+        showToast('Liked!', 'success');
+      }
+      localStorage.setItem('likes', JSON.stringify(likes));
+      updateStats();
+      loadLikedFilms();
+      loadWatchlistFilms();
+    }
+
+    // Remove from watchlist
+    function removeFromWatchlist(movieId) {
+      const index = watchlist.indexOf(movieId);
+      if (index > -1) {
+        watchlist.splice(index, 1);
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        showToast('Removed from watchlist');
+        updateStats();
+        loadLikedFilms();
+        loadWatchlistFilms();
+      }
+    }
+
+    // Toggle watchlist
+    function toggleWatchlist(movieId) {
+      const index = watchlist.indexOf(movieId);
+      if (index > -1) {
+        watchlist.splice(index, 1);
+        showToast('Removed from watchlist');
+      } else {
+        watchlist.push(movieId);
+        showToast('Added to watchlist');
+      }
+      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+      updateStats();
+      loadLikedFilms();
+      loadWatchlistFilms();
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

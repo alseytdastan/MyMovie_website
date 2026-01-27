@@ -26,29 +26,59 @@ app.use((req, res, next) => {
   next();
 });
 
-// Pages
+// ====== FRONTEND PAGES ======
+
+// Home page
 app.get('/', (req, res) =>
   res.sendFile(path.join(__dirname, 'views', 'index.html'))
 );
 
+// Films listing page
+app.get('/films', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'films.html'))
+);
+
+// Film details page
+app.get('/films/:id', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'film.html'))
+);
+
+// Add film page
+app.get('/add-film', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'add-film.html'))
+);
+
+// Watchlist page
+app.get('/watchlist', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'watchlist.html'))
+);
+
+// Profile page
+app.get('/profile', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'profile.html'))
+);
+
+// About page
 app.get('/about', (req, res) =>
   res.sendFile(path.join(__dirname, 'views', 'about.html'))
 );
 
+// Contact page
 app.get('/contact', (req, res) =>
   res.sendFile(path.join(__dirname, 'views', 'contact.html'))
 );
 
+// Legacy routes redirects
 app.get('/search', (req, res) => {
   const { q } = req.query;
-  if (!q || !q.trim()) {
-    return res.status(400).send('Missing query parameter: q');
+  if (q) {
+    return res.redirect(`/films?search=${encodeURIComponent(q)}`);
   }
-  res.sendFile(path.join(__dirname, 'views', 'search.html'));
+  res.redirect('/films');
 });
 
 app.get('/item/:id', (req, res) =>
-  res.sendFile(path.join(__dirname, 'views', 'item.html'))
+  res.redirect(`/films/${req.params.id}`)
 );
 
 

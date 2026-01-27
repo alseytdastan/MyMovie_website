@@ -3,27 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Movie Item | MyMovie</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>Redirecting... | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+  <script>
+    // Redirect to new film page
+    const path = window.location.pathname;
+    const id = path.split('/').pop();
+    if (id) {
+      window.location.replace('/films/' + id);
+    } else {
+      window.location.replace('/films');
+    }
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Movie Details</h1>
-    <p>View detailed information about a specific movie.</p>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-    </nav>
-  </header>
-
-  <main>
-    <section class="card">
-      <h2>Movie Item Page</h2>
-      <p>This is a placeholder for the movie item page. In the future, this page will display detailed information about a specific movie.</p>
-      <p><strong>Route parameter:</strong> The item ID parameter has been received and validated.</p>
-    </section>
-  </main>
+  <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="loading"><div class="spinner"></div></div>
+    <p style="margin-left: 1rem;">Redirecting...</p>
+  </div>
 </body>
 </html>
-

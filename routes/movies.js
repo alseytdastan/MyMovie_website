@@ -84,8 +84,8 @@ router.get('/:id', async (req, res) => {
 
 // POST create new movie
 router.post('/', async (req, res) => {
-  const { title, genre, year, poster, posterUrl } = req.body;
-  console.log("Received data:", { title, genre, year, poster, posterUrl });  
+  const { title, genre, year, poster, posterUrl, description } = req.body;
+  console.log("Received data:", { title, genre, year, poster, posterUrl, description });  
 
   if (!title || !year) {
     return res.status(400).json({ error: 'Title and year are required' });
@@ -97,6 +97,7 @@ router.post('/', async (req, res) => {
     year: parseInt(year),
     poster: poster || posterUrl || null,
     posterUrl: poster || posterUrl || null,
+    description: description || null,
     createdAt: new Date()
   };
 
@@ -119,7 +120,7 @@ router.put('/:id', async (req, res) => {
   const _id = parseObjectId(req, res);
   if (!_id) return;
 
-  const { title, genre, year, poster, posterUrl } = req.body;
+  const { title, genre, year, poster, posterUrl, description } = req.body;
 
   const updateData = { updatedAt: new Date() };
   if (title !== undefined) updateData.title = title;
@@ -134,6 +135,9 @@ router.put('/:id', async (req, res) => {
   if (poster !== undefined || posterUrl !== undefined) {
     updateData.poster = poster || posterUrl || null;
     updateData.posterUrl = poster || posterUrl || null;
+  }
+  if (description !== undefined) {
+    updateData.description = description;
   }
 
   if (Object.keys(updateData).length === 1) {

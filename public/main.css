@@ -36,9 +36,6 @@
   --transition-slow: 0.4s ease;
 }
 
-/* ========================================
-   Reset & Base Styles
-   ======================================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

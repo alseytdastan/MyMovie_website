@@ -1,8 +1,3 @@
-/**
- * Seed ONE admin user. Run: npm run seed-user
- * Set ADMIN_USERNAME and ADMIN_PASSWORD in env, or use defaults below.
- * Creates user in MongoDB "users" collection with bcrypt-hashed password.
- */
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { MongoClient } = require('mongodb');

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sign In | MyMovie</title>
+  <title>Sign Up | MyMovie</title>
   <link rel="stylesheet" href="/main.css" />
   <style>
     .login-page { min-height: 70vh; display: flex; align-items: center; justify-content: center; }
@@ -31,7 +31,7 @@
         <a href="/profile" class="nav-link">Profile</a>
       </div>
       <div class="nav-actions">
-        <a href="/register" id="nav-signup" class="nav-link">Sign Up</a>
+        <a href="/login" id="nav-login" class="nav-link">Sign In</a>
         <a href="/about" class="nav-icon" title="About">?</a>
       </div>
     </div>
@@ -39,20 +39,20 @@
 
   <main class="login-page">
     <div class="login-box">
-      <h1>Sign In</h1>
-      <form id="login-form">
+      <h1>Sign Up</h1>
+      <form id="register-form">
         <div class="form-group">
           <label for="username" class="form-label">Username</label>
           <input type="text" id="username" name="username" class="form-input" required autocomplete="username" />
         </div>
         <div class="form-group">
           <label for="password" class="form-label">Password</label>
-          <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password" />
+          <input type="password" id="password" name="password" class="form-input" required autocomplete="new-password" />
         </div>
         <div id="auth-error" class="auth-error hidden"></div>
-        <button type="submit" class="btn btn-primary btn-login">Sign In</button>
+        <button type="submit" class="btn btn-primary btn-login">Create Account</button>
       </form>
-      <p class="login-msg">Need an account? <a href="/register">Sign Up</a></p>
+      <p class="login-msg">Already have an account? <a href="/login">Sign In</a></p>
     </div>
   </main>
 
@@ -60,19 +60,19 @@
     (async () => {
       try {
         const res = await fetch('/auth/me', { credentials: 'include' });
-        const navSignup = document.getElementById('nav-signup');
+        const navLogin = document.getElementById('nav-login');
         if (res.ok) {
-          navSignup?.classList.add('hidden');
+          navLogin?.classList.add('hidden');
         } else {
-          navSignup?.classList.remove('hidden');
+          navLogin?.classList.remove('hidden');
         }
       } catch (_) {
-        const navSignup = document.getElementById('nav-signup');
-        navSignup?.classList.remove('hidden');
+        const navLogin = document.getElementById('nav-login');
+        navLogin?.classList.remove('hidden');
       }
     })();
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
@@ -81,7 +81,7 @@
       errEl.textContent = '';
 
       try {
-        const res = await fetch('/auth/login', {
+        const res = await fetch('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -89,7 +89,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
-          window.location.href = '/';
+          window.location.href = '/profile';
           return;
         }
         errEl.textContent = data.message || 'Invalid credentials';

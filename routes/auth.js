@@ -42,6 +42,48 @@ router.post('/login', async (req, res) => {
 });
 
 /**
+ * POST /auth/register
+ * Body: { username, password }
+ * On success: create user, set req.session.user = { id, username }, return { message: "ok" }
+ * On validation/auth fail: 400 { message: "Invalid credentials" }
+ */
+router.post('/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const u = username.trim();
+    const p = password;
+    if (!u || u.length < 3 || !p || p.length < 6) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const db = getDb();
+    const existing = await db.collection('users').findOne({ username: u });
+    if (existing) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const passwordHash = await bcrypt.hash(p, 10);
+    const newUser = {
+      username: u,
+      passwordHash,
+      createdAt: new Date(),
+    };
+
+    const result = await db.collection('users').insertOne(newUser);
+
+    req.session.user = { id: result.insertedId.toString(), username: u };
+    res.status(201).json({ message: 'ok' });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ message: 'Invalid credentials' });
+  }
+});
+
+/**
  * POST /auth/logout
  * Destroy session and clear cookie.
  */

@@ -122,11 +122,12 @@
           navLogin.classList.add('hidden');
           navLogout.classList.remove('hidden');
         } else {
-          navUser.classList.add('hidden');
-          navLogin.classList.remove('hidden');
-          navLogout.classList.add('hidden');
+          window.location.replace('/login');
+          return;
         }
-      } catch (_) {}
+      } catch (_) {
+        window.location.replace('/login');
+      }
     }
     async function doLogout(e) { e.preventDefault(); await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); window.location.href = '/'; }
 

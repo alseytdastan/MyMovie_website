@@ -85,6 +85,8 @@
             <option value="year:asc">Oldest First</option>
             <option value="title:asc">Title A-Z</option>
             <option value="title:desc">Title Z-A</option>
+            <option value="rating:desc">Rating (high to low)</option>
+            <option value="rating:asc">Rating (low to high)</option>
           </select>
         </div>
         <div class="filter-group" style="align-self: flex-end;">
@@ -126,11 +128,13 @@
     const API_BASE = '/api/movies';
     let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
     let likes = JSON.parse(localStorage.getItem('likes') || '[]');
+    let isLoggedIn = false;
 
     function fetchOpts() { return { credentials: 'include' }; }
     async function checkAuth() {
       try {
         const res = await fetch('/auth/me', fetchOpts());
+        isLoggedIn = res.ok;
         const navUser = document.getElementById('nav-user');
         const navLogin = document.getElementById('nav-login');
         const navLogout = document.getElementById('nav-logout');
@@ -148,12 +152,14 @@
           navLogout.classList.add('hidden');
           signInMsg.classList.remove('hidden');
         }
-      } catch (_) {}
+      } catch (_) {
+        isLoggedIn = false;
+      }
     }
     async function doLogout(e) { e.preventDefault(); await fetch('/auth/logout', { method: 'POST', ...fetchOpts() }); window.location.href = '/'; }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuth();
       populateYearFilter();
       parseUrlParams();
       loadFilms();
@@ -246,37 +252,24 @@
       }
     }
 
-    // Create poster card HTML
     function createPosterCard(movie) {
       const isLiked = likes.includes(movie._id);
       const isWatchlisted = watchlist.includes(movie._id);
-      
       const posterContent = movie.poster || movie.posterUrl 
         ? `<img src="${movie.poster || movie.posterUrl}" alt="${escapeHtml(movie.title)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'placeholder\\'>${getInitials(movie.title)}</div>'">`
         : `<div class="placeholder">${getInitials(movie.title)}</div>`;
       const genresStr = (movie.genres && movie.genres.length) ? movie.genres.join(', ') : (movie.genre || '');
       const ratingStr = (movie.rating != null && movie.rating !== '') ? ' • ' + Number(movie.rating) + '/10' : '';
-      return `
-        <a href="/films/${movie._id}" class="poster-card">
-          ${posterContent}
-          <div class="poster-overlay">
-            <span class="poster-title">${escapeHtml(movie.title)}</span>
-            <span class="poster-year">${movie.year || 'N/A'}${genresStr ? ' • ' + escapeHtml(genresStr) : ''}${ratingStr}</span>
-          </div>
-          <div class="poster-actions">
-            <button class="poster-action ${isWatchlisted ? 'watchlisted' : ''}" 
-                    onclick="event.preventDefault(); toggleWatchlist('${movie._id}')" 
-                    title="${isWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">
-              ${isWatchlisted ? '✓' : '+'}
-            </button>
-            <button class="poster-action ${isLiked ? 'liked' : ''}" 
-                    onclick="event.preventDefault(); toggleLike('${movie._id}')" 
-                    title="${isLiked ? 'Unlike' : 'Like'}">
-              ♥
-            </button>
-          </div>
-        </a>
-      `;
+      const actionsHtml = isLoggedIn
+        ? `<div class="poster-actions">
+            <button class="poster-action ${isWatchlisted ? 'watchlisted' : ''}" onclick="event.preventDefault(); toggleWatchlist('${movie._id}')" title="${isWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">${isWatchlisted ? '✓' : '+'}</button>
+            <button class="poster-action ${isLiked ? 'liked' : ''}" onclick="event.preventDefault(); toggleLike('${movie._id}')" title="${isLiked ? 'Unlike' : 'Like'}">♥</button>
+          </div>`
+        : `<div class="poster-actions">
+            <button class="poster-action" onclick="event.preventDefault(); window.location.href='/login'" title="Sign in to add to watchlist">+</button>
+            <button class="poster-action" onclick="event.preventDefault(); window.location.href='/login'" title="Sign in to like">♥</button>
+          </div>`;
+      return `<a href="/films/${movie._id}" class="poster-card">${posterContent}<div class="poster-overlay"><span class="poster-title">${escapeHtml(movie.title)}</span><span class="poster-year">${movie.year || 'N/A'}${genresStr ? ' • ' + escapeHtml(genresStr) : ''}${ratingStr}</span></div>${actionsHtml}</a>`;
     }
 
     // Get initials from title

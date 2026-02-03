@@ -224,7 +224,7 @@
         </div>
         
         <div class="form-group">
-          <label class="form-label">Genres (select up to 6)</label>
+          <label class="form-label">Genres</label>
           <div id="genres-checkboxes" class="form-checkboxes">
             <label><input type="checkbox" name="genre" value="Action" /> Action</label>
             <label><input type="checkbox" name="genre" value="Adventure" /> Adventure</label>
@@ -280,6 +280,8 @@
             <option value="year:asc">Year (Oldest)</option>
             <option value="title:asc">Title (A-Z)</option>
             <option value="title:desc">Title (Z-A)</option>
+            <option value="rating:desc">Rating (high to low)</option>
+            <option value="rating:asc">Rating (low to high)</option>
           </select>
           <label for="filter-genre">Genre:</label>
           <select id="filter-genre" class="sort-select" onchange="loadFilms()">
@@ -352,14 +354,12 @@
           signInMsg.classList.add('hidden');
           form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = false; });
         } else {
-          navUser.classList.add('hidden');
-          navLogin.classList.remove('hidden');
-          navLogout.classList.add('hidden');
-          signInMsg.classList.remove('hidden');
-          form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
+          window.location.replace('/login');
+          return;
         }
       } catch (_) {
         isLoggedIn = false;
+        window.location.replace('/login');
       }
     }
 
@@ -372,6 +372,16 @@
     document.addEventListener('DOMContentLoaded', () => {
       checkAuth();
       loadFilms();
+      const genreBox = document.getElementById('genres-checkboxes');
+      if (genreBox) {
+        genreBox.addEventListener('change', () => {
+          const checked = genreBox.querySelectorAll('input[name="genre"]:checked');
+          const max = 6;
+          genreBox.querySelectorAll('input[name="genre"]').forEach(cb => {
+            cb.disabled = !cb.checked && checked.length >= max;
+          });
+        });
+      }
     });
 
     function getGenresDisplay(film) {

@@ -23,6 +23,7 @@ async function seed() {
     await db.collection('users').insertOne({
       username,
       passwordHash,
+      role: 'admin',
       createdAt: new Date(),
     });
     console.log('User created:', username);

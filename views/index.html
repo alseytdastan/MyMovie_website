@@ -17,7 +17,7 @@
       <div class="nav-links">
         <a href="/" class="nav-link active">Home</a>
         <a href="/films" class="nav-link">Films</a>
-        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/add-film" id="nav-add-film" class="nav-link">Add Film</a>
         <a href="/watchlist" class="nav-link">Watchlist</a>
         <a href="/profile" class="nav-link">Profile</a>
       </div>
@@ -115,9 +115,10 @@
 
   <script>
     const API_BASE = '/api/movies';
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    const likes = JSON.parse(localStorage.getItem('likes') || '[]');
+    let watchlist = [];
+    let likes = [];
     let isLoggedIn = false;
+    let currentUser = null;
 
     function fetchOpts() { return { credentials: 'include' }; }
 
@@ -129,32 +130,65 @@
         const navLogin = document.getElementById('nav-login');
         const navLogout = document.getElementById('nav-logout');
         const navSignup = document.getElementById('nav-signup');
+        const navAddFilm = document.getElementById('nav-add-film');
         if (res.ok) {
           const data = await res.json();
+          currentUser = data.user || null;
           navUser.textContent = data.user?.username || '';
           navUser.classList.remove('hidden');
           navLogin.classList.add('hidden');
           navSignup.classList.add('hidden');
           navLogout.classList.remove('hidden');
+          if (navAddFilm) navAddFilm.classList.toggle('hidden', data.user?.role !== 'admin');
         } else {
+          currentUser = null;
           navUser.classList.add('hidden');
           navLogin.classList.remove('hidden');
           navSignup.classList.remove('hidden');
           navLogout.classList.add('hidden');
+          if (navAddFilm) navAddFilm.classList.add('hidden');
         }
       } catch (_) {
         isLoggedIn = false;
       }
     }
 
+    async function loadUserLists() {
+      if (!isLoggedIn) {
+        watchlist = [];
+        likes = [];
+        updateStats();
+        return;
+      }
+      try {
+        const [likesRes, watchRes] = await Promise.all([
+          fetch('/api/user/likes', fetchOpts()),
+          fetch('/api/user/watchlist', fetchOpts()),
+        ]);
+        const likesData = await likesRes.json().catch(() => ({}));
+        const watchData = await watchRes.json().catch(() => ({}));
+        if (likesRes.ok) likes = Array.isArray(likesData.items) ? likesData.items : [];
+        if (watchRes.ok) watchlist = Array.isArray(watchData.items) ? watchData.items : [];
+      } catch (_) {
+        likes = [];
+        watchlist = [];
+      }
+      updateStats();
+    }
+
     async function doLogout(e) {
       e.preventDefault();
       await fetch('/auth/logout', { method: 'POST', ...fetchOpts() });
+      watchlist = [];
+      likes = [];
+      currentUser = null;
+      updateStats();
       window.location.href = '/';
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
       await checkAuth();
+      await loadUserLists();
       loadPopularFilms();
       loadRecentFilms();
       updateStats();
@@ -247,35 +281,53 @@
     }
 
     // Toggle watchlist
-    function toggleWatchlist(movieId) {
-      const index = watchlist.indexOf(movieId);
-      if (index > -1) {
-        watchlist.splice(index, 1);
-        showToast('Removed from watchlist');
-      } else {
-        watchlist.push(movieId);
-        showToast('Added to watchlist');
+    async function toggleWatchlist(movieId) {
+      if (!isLoggedIn) { window.location.href = '/login'; return; }
+      const isInList = watchlist.includes(movieId);
+      const url = isInList ? `/api/user/watchlist/${movieId}` : '/api/user/watchlist';
+      const options = {
+        method: isInList ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: isInList ? undefined : JSON.stringify({ movieId }),
+      };
+      try {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Error');
+        watchlist = Array.isArray(data.items) ? data.items : [];
+        showToast(isInList ? 'Removed from watchlist' : 'Added to watchlist');
+        updateStats();
+        loadPopularFilms();
+        loadRecentFilms();
+      } catch (err) {
+        showToast(err.message || 'Error', 'error');
       }
-      localStorage.setItem('watchlist', JSON.stringify(watchlist));
-      updateStats();
-      loadPopularFilms();
-      loadRecentFilms();
     }
 
     // Toggle like
-    function toggleLike(movieId) {
-      const index = likes.indexOf(movieId);
-      if (index > -1) {
-        likes.splice(index, 1);
-        showToast('Removed like');
-      } else {
-        likes.push(movieId);
-        showToast('Liked!', 'success');
+    async function toggleLike(movieId) {
+      if (!isLoggedIn) { window.location.href = '/login'; return; }
+      const isInList = likes.includes(movieId);
+      const url = isInList ? `/api/user/likes/${movieId}` : '/api/user/likes';
+      const options = {
+        method: isInList ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: isInList ? undefined : JSON.stringify({ movieId }),
+      };
+      try {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Error');
+        likes = Array.isArray(data.items) ? data.items : [];
+        showToast(isInList ? 'Removed like' : 'Liked!', 'success');
+        updateStats();
+        loadPopularFilms();
+        loadRecentFilms();
+      } catch (err) {
+        showToast(err.message || 'Error', 'error');
       }
-      localStorage.setItem('likes', JSON.stringify(likes));
-      updateStats();
-      loadPopularFilms();
-      loadRecentFilms();
     }
 
     // Filter by genre

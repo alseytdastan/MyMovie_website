@@ -1,7 +1,7 @@
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const { getDb } = require('../database/mongo');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -37,45 +37,57 @@ function validateRating(value) {
   return n;
 }
 
-/** Validate film body for create/update. Returns { error } or { title, year, genres, rating, director, poster, posterUrl, description }. */
-function validateFilmBody(body, isUpdate) {
+/** Validate film body for create/update. Returns { errors, data }. */
+function validateFilmBody(body, requireAll) {
+  const errors = [];
   const { title, year, genre, genres, rating, director, poster, posterUrl, description } = body;
-  if (!isUpdate && (!title || typeof title !== 'string' || !title.trim())) {
-    return { error: 'Title is required' };
-  }
-  if (title !== undefined && typeof title === 'string' && !title.trim()) {
-    return { error: 'Title cannot be empty' };
-  }
-  if (!isUpdate && (year === undefined || year === null || year === '')) {
-    return { error: 'Year is required' };
-  }
-  if (year !== undefined && year !== null && year !== '') {
-    const y = Number(year);
-    if (!Number.isInteger(y) || y < 1800 || y > new Date().getFullYear() + 1) {
-      return { error: 'Year must be an integer between 1800 and ' + (new Date().getFullYear() + 1) };
+  const currentYear = new Date().getFullYear();
+
+  if (requireAll || title !== undefined) {
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      errors.push('title must be a non-empty string');
     }
   }
+
+  if (requireAll || year !== undefined) {
+    const y = Number(year);
+    if (!Number.isInteger(y) || y < 1888 || y > currentYear + 1) {
+      errors.push(`year must be between 1888 and ${currentYear + 1}`);
+    }
+  }
+
   const gs = normalizeGenres(genre, genres);
-  if (gs.length > GENRES_MAX) {
-    return { error: 'At most ' + GENRES_MAX + ' genres allowed' };
+  if (requireAll || genre !== undefined || genres !== undefined) {
+    if (gs.length < 1 || gs.length > GENRES_MAX) {
+      errors.push(`genres must contain 1-${GENRES_MAX} items`);
+    }
+    for (const g of gs) {
+      if (!g || typeof g !== 'string') {
+        errors.push('each genre must be a non-empty string');
+        break;
+      }
+    }
   }
-  for (const g of gs) {
-    if (!g || typeof g !== 'string') return { error: 'Each genre must be a non-empty string' };
+
+  if (rating !== undefined && rating !== null && rating !== '') {
+    const r = validateRating(rating);
+    if (r === null) {
+      errors.push(`rating must be between ${RATING_MIN} and ${RATING_MAX}`);
+    }
   }
-  const r = validateRating(rating);
-  if (rating !== undefined && rating !== null && rating !== '' && r === null) {
-    return { error: 'Rating must be a number between ' + RATING_MIN + ' and ' + RATING_MAX };
-  }
-  return {
+
+  const data = {
     title: title !== undefined ? String(title).trim() : undefined,
     year: year !== undefined && year !== null && year !== '' ? Number(year) : undefined,
     genres: gs.length ? gs : undefined,
-    rating: r !== undefined ? r : undefined,
+    rating: rating !== undefined && rating !== null && rating !== '' ? Number(rating) : undefined,
     director: director !== undefined ? (director ? String(director).trim() : null) : undefined,
     poster: poster || posterUrl || undefined,
     posterUrl: poster || posterUrl || undefined,
     description: description !== undefined ? (description ? String(description).trim() : null) : undefined,
   };
+
+  return { errors, data };
 }
 
 // GET all movies (public)
@@ -143,15 +155,12 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST create movie (protected)
-router.post('/', requireAuth, async (req, res) => {
-  const validated = validateFilmBody(req.body, false);
-  if (validated.error) {
-    return res.status(400).json({ error: validated.error });
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
+  const validated = validateFilmBody(req.body, true);
+  if (validated.errors.length) {
+    return res.status(400).json({ message: 'Validation error', errors: validated.errors });
   }
-  const { title, year, genres, rating, director, poster, posterUrl, description } = validated;
-  if (!title || year === undefined) {
-    return res.status(400).json({ error: 'Title and year are required' });
-  }
+  const { title, year, genres, rating, director, poster, posterUrl, description } = validated.data;
 
   const movieData = {
     title,
@@ -177,29 +186,29 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // PUT update movie (protected)
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   const _id = parseObjectId(req, res);
   if (!_id) return;
 
   const validated = validateFilmBody(req.body, true);
-  if (validated.error) {
-    return res.status(400).json({ error: validated.error });
+  if (validated.errors.length) {
+    return res.status(400).json({ message: 'Validation error', errors: validated.errors });
   }
 
   const updateData = { updatedAt: new Date() };
-  if (validated.title !== undefined) updateData.title = validated.title;
-  if (validated.year !== undefined) updateData.year = validated.year;
-  if (validated.genres !== undefined) {
-    updateData.genres = validated.genres;
-    updateData.genre = validated.genres && validated.genres[0] ? validated.genres[0] : 'general';
+  if (validated.data.title !== undefined) updateData.title = validated.data.title;
+  if (validated.data.year !== undefined) updateData.year = validated.data.year;
+  if (validated.data.genres !== undefined) {
+    updateData.genres = validated.data.genres;
+    updateData.genre = validated.data.genres && validated.data.genres[0] ? validated.data.genres[0] : 'general';
   }
-  if (validated.rating !== undefined) updateData.rating = validated.rating;
-  if (validated.director !== undefined) updateData.director = validated.director;
-  if (validated.posterUrl !== undefined) {
-    updateData.poster = validated.posterUrl || null;
-    updateData.posterUrl = validated.posterUrl || null;
+  if (validated.data.rating !== undefined) updateData.rating = validated.data.rating;
+  if (validated.data.director !== undefined) updateData.director = validated.data.director;
+  if (validated.data.posterUrl !== undefined) {
+    updateData.poster = validated.data.posterUrl || null;
+    updateData.posterUrl = validated.data.posterUrl || null;
   }
-  if (validated.description !== undefined) updateData.description = validated.description;
+  if (validated.data.description !== undefined) updateData.description = validated.data.description;
 
   if (Object.keys(updateData).length === 1) {
     return res.status(400).json({ error: 'No fields to update' });
@@ -222,7 +231,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE movie (protected)
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   const _id = parseObjectId(req, res);
   if (!_id) return;
   try {

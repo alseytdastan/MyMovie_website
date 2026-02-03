@@ -17,7 +17,7 @@
       <div class="nav-links">
         <a href="/" class="nav-link">Home</a>
         <a href="/films" class="nav-link">Films</a>
-        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/add-film" id="nav-add-film" class="nav-link">Add Film</a>
         <a href="/watchlist" class="nav-link active">Watchlist</a>
         <a href="/profile" class="nav-link">Profile</a>
       </div>
@@ -90,36 +90,75 @@
   <script>
     const API_BASE = '/api/movies';
     
-    // Local storage for watchlist and likes
-    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    let likes = JSON.parse(localStorage.getItem('likes') || '[]');
+    let watchlist = [];
+    let likes = [];
+    let isLoggedIn = false;
+    let currentUser = null;
 
     async function checkAuth() {
       try {
         const res = await fetch('/auth/me', { credentials: 'include' });
+        isLoggedIn = res.ok;
         const navUser = document.getElementById('nav-user');
         const navLogin = document.getElementById('nav-login');
         const navLogout = document.getElementById('nav-logout');
         const navSignup = document.getElementById('nav-signup');
+        const navAddFilm = document.getElementById('nav-add-film');
         if (res.ok) {
           const data = await res.json();
+          currentUser = data.user || null;
           navUser.textContent = data.user?.username || '';
           navUser.classList.remove('hidden');
           navLogin.classList.add('hidden');
           navSignup.classList.add('hidden');
           navLogout.classList.remove('hidden');
+          if (navAddFilm) navAddFilm.classList.toggle('hidden', data.user?.role !== 'admin');
         } else {
-          window.location.replace('/login');
-          return;
+          currentUser = null;
+          navUser.classList.add('hidden');
+          navLogin.classList.remove('hidden');
+          navSignup.classList.remove('hidden');
+          navLogout.classList.add('hidden');
+          if (navAddFilm) navAddFilm.classList.add('hidden');
         }
       } catch (_) {
-        window.location.replace('/login');
+        isLoggedIn = false;
       }
     }
-    async function doLogout(e) { e.preventDefault(); await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); window.location.href = '/'; }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
+    async function loadUserLists() {
+      if (!isLoggedIn) {
+        watchlist = [];
+        likes = [];
+        return;
+      }
+      try {
+        const [likesRes, watchRes] = await Promise.all([
+          fetch('/api/user/likes', { credentials: 'include' }),
+          fetch('/api/user/watchlist', { credentials: 'include' }),
+        ]);
+        const likesData = await likesRes.json().catch(() => ({}));
+        const watchData = await watchRes.json().catch(() => ({}));
+        if (likesRes.ok) likes = Array.isArray(likesData.items) ? likesData.items : [];
+        if (watchRes.ok) watchlist = Array.isArray(watchData.items) ? watchData.items : [];
+      } catch (_) {
+        likes = [];
+        watchlist = [];
+      }
+    }
+
+    async function doLogout(e) {
+      e.preventDefault();
+      await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+      watchlist = [];
+      likes = [];
+      currentUser = null;
+      window.location.href = '/';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuth();
+      await loadUserLists();
       loadWatchlist();
     });
 
@@ -131,6 +170,20 @@
       
       countEl.textContent = watchlist.length;
       clearBtn.style.display = watchlist.length > 0 ? 'block' : 'none';
+
+      if (!isLoggedIn) {
+        countEl.textContent = '0';
+        clearBtn.style.display = 'none';
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">🔒</div>
+            <h3>Sign in to see your watchlist</h3>
+            <p>Your saved films are available after login.</p>
+            <a href="/login" class="btn btn-primary mt-2">Sign In</a>
+          </div>
+        `;
+        return;
+      }
       
       if (watchlist.length === 0) {
         grid.innerHTML = `
@@ -158,9 +211,7 @@
         
         // Update count in case some movies were deleted
         if (watchlistMovies.length !== watchlist.length) {
-          // Clean up watchlist of non-existent movies
           watchlist = watchlistMovies.map(m => m._id);
-          localStorage.setItem('watchlist', JSON.stringify(watchlist));
           countEl.textContent = watchlist.length;
         }
         
@@ -226,38 +277,57 @@
     }
 
     // Remove from watchlist
-    function removeFromWatchlist(movieId) {
-      const index = watchlist.indexOf(movieId);
-      if (index > -1) {
-        watchlist.splice(index, 1);
-        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    async function removeFromWatchlist(movieId) {
+      if (!isLoggedIn) { window.location.href = '/login'; return; }
+      try {
+        const res = await fetch(`/api/user/watchlist/${movieId}`, { method: 'DELETE', credentials: 'include' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Error');
+        watchlist = Array.isArray(data.items) ? data.items : [];
         showToast('Removed from watchlist');
         loadWatchlist();
+      } catch (err) {
+        showToast(err.message || 'Error', 'error');
       }
     }
 
     // Clear entire watchlist
-    function clearWatchlist() {
+    async function clearWatchlist() {
       if (!confirm('Are you sure you want to clear your entire watchlist?')) return;
-      
-      watchlist = [];
-      localStorage.setItem('watchlist', JSON.stringify(watchlist));
-      showToast('Watchlist cleared');
-      loadWatchlist();
+      if (!isLoggedIn) { window.location.href = '/login'; return; }
+      try {
+        for (const movieId of watchlist.slice()) {
+          await fetch(`/api/user/watchlist/${movieId}`, { method: 'DELETE', credentials: 'include' });
+        }
+        watchlist = [];
+        showToast('Watchlist cleared');
+        loadWatchlist();
+      } catch (err) {
+        showToast('Error', 'error');
+      }
     }
 
     // Toggle like
-    function toggleLike(movieId) {
-      const index = likes.indexOf(movieId);
-      if (index > -1) {
-        likes.splice(index, 1);
-        showToast('Removed like');
-      } else {
-        likes.push(movieId);
-        showToast('Liked!', 'success');
+    async function toggleLike(movieId) {
+      if (!isLoggedIn) { window.location.href = '/login'; return; }
+      const isInList = likes.includes(movieId);
+      const url = isInList ? `/api/user/likes/${movieId}` : '/api/user/likes';
+      const options = {
+        method: isInList ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: isInList ? undefined : JSON.stringify({ movieId }),
+      };
+      try {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Error');
+        likes = Array.isArray(data.items) ? data.items : [];
+        showToast(isInList ? 'Removed like' : 'Liked!', 'success');
+        loadWatchlist();
+      } catch (err) {
+        showToast(err.message || 'Error', 'error');
       }
-      localStorage.setItem('likes', JSON.stringify(likes));
-      loadWatchlist();
     }
 
     // Show toast notification

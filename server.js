@@ -10,6 +10,7 @@ const fs = require('fs');
 const { connectToDb } = require('./database/mongo');
 const moviesRouter = require('./routes/movies');
 const authRouter = require('./routes/auth');
+const userListsRouter = require('./routes/user-lists');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -119,6 +120,9 @@ app.get('/item/:id', (req, res) =>
 
 //auth api 
 app.use('/auth', authRouter);
+
+//user lists api
+app.use('/api/user', userListsRouter);
 
 //movies api 
 app.use('/api/movies', moviesRouter);

@@ -4,12 +4,6 @@ const { getDb } = require('../database/mongo');
 
 const router = express.Router();
 
-/**
- * POST /auth/login
- * Body: { username, password }
- * On success: set req.session.user = { id, username }, return { message: "ok" }
- * On fail: 401 { message: "Invalid credentials" }
- */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -33,7 +27,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    req.session.user = { id: user._id.toString(), username: user.username };
+    const role = user.role === 'admin' ? 'admin' : 'user';
+    req.session.user = { id: user._id.toString(), username: user.username, role };
     res.status(200).json({ message: 'ok' });
   } catch (err) {
     console.error('Login error:', err);
@@ -70,12 +65,13 @@ router.post('/register', async (req, res) => {
     const newUser = {
       username: u,
       passwordHash,
+      role: 'user',
       createdAt: new Date(),
     };
 
     const result = await db.collection('users').insertOne(newUser);
 
-    req.session.user = { id: result.insertedId.toString(), username: u };
+    req.session.user = { id: result.insertedId.toString(), username: u, role: 'user' };
     res.status(201).json({ message: 'ok' });
   } catch (err) {
     console.error('Register error:', err);

@@ -179,7 +179,7 @@
       <div class="nav-links">
         <a href="/" class="nav-link">Home</a>
         <a href="/films" class="nav-link">Films</a>
-        <a href="/add-film" class="nav-link active">Add Film</a>
+        <a href="/add-film" id="nav-add-film" class="nav-link active">Add Film</a>
         <a href="/watchlist" class="nav-link">Watchlist</a>
         <a href="/profile" class="nav-link">Profile</a>
       </div>
@@ -204,6 +204,7 @@
       <h1>Add New Film</h1>
       <p>Add a film to the database</p>
       <p id="sign-in-msg" class="section-title hidden" style="border:none; color: var(--accent-orange);">Please sign in to modify data.</p>
+      <p id="admin-msg" class="section-title hidden" style="border:none; color: var(--accent-orange);">Only admin can manage movies.</p>
     </div>
   </section>
 
@@ -220,7 +221,7 @@
           </div>
           <div class="form-group">
             <label for="year" class="form-label">Year *</label>
-            <input type="number" id="year" name="year" class="form-input" placeholder="2024" min="1800" max="2100" required />
+            <input type="number" id="year" name="year" class="form-input" placeholder="2024" min="1888" max="2100" required />
           </div>
         </div>
         
@@ -265,6 +266,7 @@
           <textarea id="description" name="description" class="form-textarea" placeholder="Brief description of the film..."></textarea>
         </div>
         
+        <div id="form-error" class="form-hint" style="color: var(--accent-red); display: none;"></div>
         <button type="submit" class="btn btn-primary btn-submit" id="submit-btn">Add Film</button>
       </form>
 
@@ -334,6 +336,7 @@
     const AUTH_ME = '/auth/me';
     let editingId = null;
     let isLoggedIn = false;
+    let isAdmin = false;
 
     function fetchOpts() { return { credentials: 'include' }; }
 
@@ -344,31 +347,47 @@
         const navLogin = document.getElementById('nav-login');
         const navLogout = document.getElementById('nav-logout');
         const navUser = document.getElementById('nav-user');
+        const navAddFilm = document.getElementById('nav-add-film');
         const navSignup = document.getElementById('nav-signup');
         const signInMsg = document.getElementById('sign-in-msg');
+        const adminMsg = document.getElementById('admin-msg');
         const form = document.getElementById('add-film-form');
         if (isLoggedIn) {
           const data = await res.json();
+          isAdmin = data.user?.role === 'admin';
           navUser.textContent = data.user?.username || '';
           navUser.classList.remove('hidden');
           navLogin.classList.add('hidden');
           navSignup.classList.add('hidden');
           navLogout.classList.remove('hidden');
-          signInMsg.classList.add('hidden');
-          form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = false; });
+          if (navAddFilm && !isAdmin) navAddFilm.classList.add('hidden');
+          if (isAdmin) {
+            signInMsg.classList.add('hidden');
+            adminMsg.classList.add('hidden');
+            form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = false; });
+          } else {
+            signInMsg.classList.add('hidden');
+            adminMsg.classList.remove('hidden');
+            form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
+          }
         } else {
-          window.location.replace('/login');
-          return;
+          isAdmin = false;
+          if (navAddFilm) navAddFilm.classList.remove('hidden');
+          signInMsg.classList.remove('hidden');
+          adminMsg.classList.add('hidden');
+          form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
         }
       } catch (_) {
         isLoggedIn = false;
-        window.location.replace('/login');
+        isAdmin = false;
       }
     }
 
     async function logout(e) {
       e.preventDefault();
       await fetch('/auth/logout', { method: 'POST', ...fetchOpts() });
+      isLoggedIn = false;
+      isAdmin = false;
       window.location.href = '/';
     }
 
@@ -416,7 +435,7 @@
           container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎬</div><h3>No films yet</h3><p>Add your first film using the form above</p></div>';
           return;
         }
-        const actionsCell = (film) => isLoggedIn
+        const actionsCell = (film) => isAdmin
           ? `<div class="btn-group"><button class="btn btn-secondary btn-small" onclick="editFilm('${film._id}')">Edit</button><button class="btn btn-danger btn-small" onclick="deleteFilm('${film._id}')">Delete</button></div>`
           : '—';
         container.innerHTML = `
@@ -443,13 +462,38 @@
 
     document.getElementById('add-film-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const errorEl = document.getElementById('form-error');
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+      if (!isAdmin) {
+        errorEl.textContent = 'Only admin can manage movies.';
+        errorEl.style.display = 'block';
+        return;
+      }
       const genreChecks = document.querySelectorAll('#genres-checkboxes input[name="genre"]:checked');
       const genres = Array.from(genreChecks).map(c => c.value).slice(0, 6);
       const ratingRaw = document.getElementById('rating').value.trim();
       const rating = ratingRaw === '' ? undefined : parseFloat(ratingRaw);
+      const titleVal = document.getElementById('title').value.trim();
+      const yearVal = parseInt(document.getElementById('year').value, 10);
+      const currentYear = new Date().getFullYear();
+      const errors = [];
+      if (!titleVal) errors.push('Title is required');
+      if (!Number.isInteger(yearVal) || yearVal < 1888 || yearVal > currentYear + 1) {
+        errors.push(`Year must be between 1888 and ${currentYear + 1}`);
+      }
+      if (!genres.length || genres.length > 6) errors.push('Select 1–6 genres');
+      if (rating !== undefined && (Number.isNaN(rating) || rating < 0 || rating > 10)) {
+        errors.push('Rating must be between 0 and 10');
+      }
+      if (errors.length) {
+        errorEl.textContent = errors.join('. ');
+        errorEl.style.display = 'block';
+        return;
+      }
       const filmData = {
-        title: document.getElementById('title').value.trim(),
-        year: parseInt(document.getElementById('year').value),
+        title: titleVal,
+        year: yearVal,
         genres: genres.length ? genres : undefined,
         rating: rating !== undefined && !Number.isNaN(rating) ? rating : undefined,
         director: document.getElementById('director').value.trim() || undefined,
@@ -464,7 +508,13 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           if (response.status === 401) { showToast('Please sign in to modify data.', 'error'); return; }
-          throw new Error(data.error || 'Operation failed');
+          if (response.status === 403) { showToast('Only admin can manage movies.', 'error'); return; }
+          if (response.status === 400) {
+            errorEl.textContent = data.message ? `${data.message}${Array.isArray(data.errors) ? ': ' + data.errors.join(', ') : ''}` : 'Validation error';
+            errorEl.style.display = 'block';
+            return;
+          }
+          throw new Error(data.message || data.error || 'Operation failed');
         }
         showToast(isUpdate ? 'Film updated!' : 'Film added!', 'success');
         resetForm();
@@ -475,6 +525,7 @@
     });
 
     async function editFilm(id) {
+      if (!isAdmin) { showToast('Only admin can manage movies.', 'error'); return; }
       try {
         const response = await fetch(`${API_BASE}/${id}`, fetchOpts());
         const film = await response.json();
@@ -498,9 +549,11 @@
 
     async function deleteFilm(id) {
       if (!confirm('Are you sure you want to delete this film?')) return;
+      if (!isAdmin) { showToast('Only admin can manage movies.', 'error'); return; }
       try {
         const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', ...fetchOpts() });
         if (response.status === 401) { showToast('Please sign in to modify data.', 'error'); loadFilms(); return; }
+        if (response.status === 403) { showToast('Only admin can manage movies.', 'error'); loadFilms(); return; }
         if (!response.ok) throw new Error('Failed to delete');
         showToast('Film deleted', 'success');
         loadFilms();

@@ -5,16 +5,20 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed-user": "node scripts/seed-user.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "better-sqlite3": "^12.6.0",
+    "connect-mongo": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-session": "^1.18.0",
     "mongodb": "^7.0.0"
   }
 }

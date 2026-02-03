@@ -27,6 +27,9 @@
       </div>
       
       <div class="nav-actions">
+        <span id="nav-user" class="nav-link hidden" style="font-size:0.875rem;"></span>
+        <a href="/login" id="nav-login" class="nav-link">Sign In</a>
+        <a href="#" id="nav-logout" class="nav-link hidden" onclick="doLogout(event)">Logout</a>
         <a href="/about" class="nav-icon" title="About">?</a>
       </div>
     </div>
@@ -106,8 +109,29 @@
     // Cached movies
     let allMovies = [];
 
-    // Initialize page
+    async function checkAuth() {
+      try {
+        const res = await fetch('/auth/me', { credentials: 'include' });
+        const navUser = document.getElementById('nav-user');
+        const navLogin = document.getElementById('nav-login');
+        const navLogout = document.getElementById('nav-logout');
+        if (res.ok) {
+          const data = await res.json();
+          navUser.textContent = data.user?.username || '';
+          navUser.classList.remove('hidden');
+          navLogin.classList.add('hidden');
+          navLogout.classList.remove('hidden');
+        } else {
+          navUser.classList.add('hidden');
+          navLogin.classList.remove('hidden');
+          navLogout.classList.add('hidden');
+        }
+      } catch (_) {}
+    }
+    async function doLogout(e) { e.preventDefault(); await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); window.location.href = '/'; }
+
     document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
       updateStats();
       loadAllMovies();
     });
@@ -121,7 +145,7 @@
     // Load all movies once
     async function loadAllMovies() {
       try {
-        const response = await fetch(API_BASE);
+        const response = await fetch(API_BASE, { credentials: 'include' });
         allMovies = await response.json();
         
         loadLikedFilms();

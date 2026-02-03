@@ -1,0 +1,70 @@
+const express = require('express');
+const bcrypt = require('bcrypt');
+const { getDb } = require('../database/mongo');
+
+const router = express.Router();
+
+/**
+ * POST /auth/login
+ * Body: { username, password }
+ * On success: set req.session.user = { id, username }, return { message: "ok" }
+ * On fail: 401 { message: "Invalid credentials" }
+ */
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    const u = username.trim();
+    const p = password;
+    if (!u || !p) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const db = getDb();
+    const user = await db.collection('users').findOne({ username: u });
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const match = await bcrypt.compare(p, user.passwordHash);
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    req.session.user = { id: user._id.toString(), username: user.username };
+    res.status(200).json({ message: 'ok' });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Invalid credentials' });
+  }
+});
+
+/**
+ * POST /auth/logout
+ * Destroy session and clear cookie.
+ */
+router.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).json({ message: 'Error logging out' });
+    }
+    res.clearCookie('connect.sid', { path: '/' });
+    res.status(200).json({ message: 'ok' });
+  });
+});
+
+/**
+ * GET /auth/me
+ * Return 200 with { user: { id, username } } if logged in, else 401.
+ */
+router.get('/me', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.status(200).json({ user: req.session.user });
+  }
+  res.status(401).json({ message: 'Not authenticated' });
+});
+
+module.exports = router;

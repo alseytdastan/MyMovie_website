@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In | MyMovie</title>
+  <link rel="stylesheet" href="/main.css" />
+  <style>
+    .login-page { min-height: 70vh; display: flex; align-items: center; justify-content: center; }
+    .login-box { max-width: 400px; width: 100%; background: var(--bg-secondary); padding: 2rem; border-radius: 8px; }
+    .login-box h1 { margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .form-input { width: 100%; padding: 0.75rem 1rem; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); font-size: 1rem; }
+    .form-input:focus { outline: none; border-color: var(--accent-green); }
+    .btn-login { width: 100%; padding: 0.875rem; margin-top: 0.5rem; }
+    .login-msg { margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted); text-align: center; }
+    .login-msg a { color: var(--accent-green); }
+    .auth-error { color: var(--accent-red); font-size: 0.875rem; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand"><span class="nav-logo">My<span>Movie</span></span></a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/films" class="nav-link">Films</a>
+        <a href="/add-film" class="nav-link">Add Film</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <a href="/profile" class="nav-link">Profile</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/about" class="nav-icon" title="About">?</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="login-page">
+    <div class="login-box">
+      <h1>Sign In</h1>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username" class="form-label">Username</label>
+          <input type="text" id="username" name="username" class="form-input" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password" />
+        </div>
+        <div id="auth-error" class="auth-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-login">Sign In</button>
+      </form>
+      <p class="login-msg">Need an account? Run <code>npm run seed-user</code> to create an admin user.</p>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('auth-error');
+      errEl.classList.add('hidden');
+      errEl.textContent = '';
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          window.location.href = '/';
+          return;
+        }
+        errEl.textContent = data.message || 'Invalid credentials';
+        errEl.classList.remove('hidden');
+      } catch (err) {
+        errEl.textContent = 'Invalid credentials';
+        errEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -162,6 +162,10 @@
       color: var(--text-primary);
       font-size: 0.875rem;
     }
+    .form-checkboxes { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+    .form-checkboxes label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: var(--text-secondary); }
+    .form-checkboxes input[type="checkbox"] { width: auto; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -185,6 +189,9 @@
       </div>
       
       <div class="nav-actions">
+        <span id="nav-user" class="nav-link hidden"></span>
+        <a href="/login" id="nav-login" class="nav-link">Sign In</a>
+        <a href="#" id="nav-logout" class="nav-link hidden" onclick="logout(event)">Logout</a>
         <a href="/about" class="nav-icon" title="About">?</a>
       </div>
     </div>
@@ -195,6 +202,7 @@
     <div class="container">
       <h1>Add New Film</h1>
       <p>Add a film to the database</p>
+      <p id="sign-in-msg" class="section-title hidden" style="border:none; color: var(--accent-orange);">Please sign in to modify data.</p>
     </div>
   </section>
 
@@ -216,23 +224,33 @@
         </div>
         
         <div class="form-group">
-          <label for="genre" class="form-label">Genre</label>
-          <select id="genre" name="genre" class="form-select">
-            <option value="">Select genre</option>
-            <option value="Action">Action</option>
-            <option value="Adventure">Adventure</option>
-            <option value="Animation">Animation</option>
-            <option value="Comedy">Comedy</option>
-            <option value="Crime">Crime</option>
-            <option value="Drama">Drama</option>
-            <option value="Fantasy">Fantasy</option>
-            <option value="Horror">Horror</option>
-            <option value="Mystery">Mystery</option>
-            <option value="Romance">Romance</option>
-            <option value="Sci-Fi">Sci-Fi</option>
-            <option value="Thriller">Thriller</option>
-            <option value="Documentary">Documentary</option>
-          </select>
+          <label class="form-label">Genres (select up to 6)</label>
+          <div id="genres-checkboxes" class="form-checkboxes">
+            <label><input type="checkbox" name="genre" value="Action" /> Action</label>
+            <label><input type="checkbox" name="genre" value="Adventure" /> Adventure</label>
+            <label><input type="checkbox" name="genre" value="Animation" /> Animation</label>
+            <label><input type="checkbox" name="genre" value="Comedy" /> Comedy</label>
+            <label><input type="checkbox" name="genre" value="Crime" /> Crime</label>
+            <label><input type="checkbox" name="genre" value="Drama" /> Drama</label>
+            <label><input type="checkbox" name="genre" value="Fantasy" /> Fantasy</label>
+            <label><input type="checkbox" name="genre" value="Horror" /> Horror</label>
+            <label><input type="checkbox" name="genre" value="Mystery" /> Mystery</label>
+            <label><input type="checkbox" name="genre" value="Romance" /> Romance</label>
+            <label><input type="checkbox" name="genre" value="Sci-Fi" /> Sci-Fi</label>
+            <label><input type="checkbox" name="genre" value="Thriller" /> Thriller</label>
+            <label><input type="checkbox" name="genre" value="Documentary" /> Documentary</label>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rating" class="form-label">Rating (0–10)</label>
+            <input type="number" id="rating" name="rating" class="form-input" placeholder="—" min="0" max="10" step="0.5" />
+          </div>
+          <div class="form-group">
+            <label for="director" class="form-label">Director</label>
+            <input type="text" id="director" name="director" class="form-input" placeholder="Director name" />
+          </div>
         </div>
         
         <div class="form-group">
@@ -310,205 +328,188 @@
 
   <script>
     const API_BASE = '/api/movies';
+    const AUTH_ME = '/auth/me';
     let editingId = null;
+    let isLoggedIn = false;
 
-    // Initialize
+    function fetchOpts() { return { credentials: 'include' }; }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch(AUTH_ME, fetchOpts());
+        isLoggedIn = res.ok;
+        const navLogin = document.getElementById('nav-login');
+        const navLogout = document.getElementById('nav-logout');
+        const navUser = document.getElementById('nav-user');
+        const signInMsg = document.getElementById('sign-in-msg');
+        const form = document.getElementById('add-film-form');
+        if (isLoggedIn) {
+          const data = await res.json();
+          navUser.textContent = data.user?.username || '';
+          navUser.classList.remove('hidden');
+          navLogin.classList.add('hidden');
+          navLogout.classList.remove('hidden');
+          signInMsg.classList.add('hidden');
+          form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = false; });
+        } else {
+          navUser.classList.add('hidden');
+          navLogin.classList.remove('hidden');
+          navLogout.classList.add('hidden');
+          signInMsg.classList.remove('hidden');
+          form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
+        }
+      } catch (_) {
+        isLoggedIn = false;
+      }
+    }
+
+    async function logout(e) {
+      e.preventDefault();
+      await fetch('/auth/logout', { method: 'POST', ...fetchOpts() });
+      window.location.href = '/';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
       loadFilms();
     });
 
-    // Load films
+    function getGenresDisplay(film) {
+      const g = film.genres && Array.isArray(film.genres) ? film.genres : (film.genre ? [film.genre] : []);
+      return g.length ? g.join(', ') : '—';
+    }
+
+    function getRatingDisplay(film) {
+      const r = film.rating;
+      if (r === undefined || r === null || r === '') return '—';
+      const n = Number(r);
+      if (Number.isNaN(n)) return '—';
+      return n;
+    }
+
     async function loadFilms() {
       const container = document.getElementById('films-table-container');
       const sort = document.getElementById('sort-select').value;
       const genre = document.getElementById('filter-genre').value;
-      
       container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-      
       try {
         const params = new URLSearchParams();
         if (sort) params.append('sort', sort);
         if (genre) params.append('genre', genre);
-        
         const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
-        const response = await fetch(url);
+        const response = await fetch(url, fetchOpts());
         const films = await response.json();
-        
         if (films.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">🎬</div>
-              <h3>No films yet</h3>
-              <p>Add your first film using the form above</p>
-            </div>
-          `;
+          container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎬</div><h3>No films yet</h3><p>Add your first film using the form above</p></div>';
           return;
         }
-        
+        const actionsCell = (film) => isLoggedIn
+          ? `<div class="btn-group"><button class="btn btn-secondary btn-small" onclick="editFilm('${film._id}')">Edit</button><button class="btn btn-danger btn-small" onclick="deleteFilm('${film._id}')">Delete</button></div>`
+          : '—';
         container.innerHTML = `
           <table class="film-table">
-            <thead>
-              <tr>
-                <th>Poster</th>
-                <th>Title</th>
-                <th>Year</th>
-                <th>Genre</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Poster</th><th>Title</th><th>Year</th><th>Genres</th><th>Rating</th><th>Actions</th></tr></thead>
             <tbody>
               ${films.map(film => `
                 <tr>
-                  <td>
-                    ${film.poster || film.posterUrl 
-                      ? `<img src="${film.poster || film.posterUrl}" class="poster-thumb" alt="${escapeHtml(film.title)}" onerror="this.outerHTML='<div class=\\'poster-placeholder\\'>${getInitials(film.title)}</div>'">`
-                      : `<div class="poster-placeholder">${getInitials(film.title)}</div>`
-                    }
-                  </td>
+                  <td>${film.poster || film.posterUrl ? `<img src="${film.poster || film.posterUrl}" class="poster-thumb" alt="${escapeHtml(film.title)}" onerror="this.outerHTML='<div class=\\'poster-placeholder\\'>${getInitials(film.title)}</div>'">` : `<div class="poster-placeholder">${getInitials(film.title)}</div>`}</td>
                   <td><a href="/films/${film._id}" style="color: var(--text-primary);">${escapeHtml(film.title)}</a></td>
-                  <td>${film.year || '-'}</td>
-                  <td>${escapeHtml(film.genre || '-')}</td>
-                  <td>
-                    <div class="btn-group">
-                      <button class="btn btn-secondary btn-small" onclick="editFilm('${film._id}')">Edit</button>
-                      <button class="btn btn-danger btn-small" onclick="deleteFilm('${film._id}')">Delete</button>
-                    </div>
-                  </td>
+                  <td>${film.year || '—'}</td>
+                  <td>${escapeHtml(getGenresDisplay(film))}</td>
+                  <td>${getRatingDisplay(film)}</td>
+                  <td>${actionsCell(film)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         `;
-      } catch (error) {
-        console.error('Error loading films:', error);
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">⚠️</div>
-            <h3>Error loading films</h3>
-          </div>
-        `;
+      } catch (err) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Error loading films</h3></div>';
       }
     }
 
-    // Handle form submission
     document.getElementById('add-film-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const title = document.getElementById('title').value.trim();
-      const year = document.getElementById('year').value;
-      const genre = document.getElementById('genre').value;
-      const poster = document.getElementById('poster').value.trim();
-      const description = document.getElementById('description').value.trim();
-      
-      if (!title || !year) {
-        showToast('Title and year are required', 'error');
-        return;
-      }
-      
+      const genreChecks = document.querySelectorAll('#genres-checkboxes input[name="genre"]:checked');
+      const genres = Array.from(genreChecks).map(c => c.value).slice(0, 6);
+      const ratingRaw = document.getElementById('rating').value.trim();
+      const rating = ratingRaw === '' ? undefined : parseFloat(ratingRaw);
       const filmData = {
-        title,
-        year: parseInt(year),
-        genre: genre || 'general',
-        poster: poster || null,
-        posterUrl: poster || null,
-        description: description || null
+        title: document.getElementById('title').value.trim(),
+        year: parseInt(document.getElementById('year').value),
+        genres: genres.length ? genres : undefined,
+        rating: rating !== undefined && !Number.isNaN(rating) ? rating : undefined,
+        director: document.getElementById('director').value.trim() || undefined,
+        posterUrl: document.getElementById('poster').value.trim() || undefined,
+        description: document.getElementById('description').value.trim() || undefined
       };
-      
       try {
         const isUpdate = !!editingId;
         const url = isUpdate ? `${API_BASE}/${editingId}` : API_BASE;
         const method = isUpdate ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(filmData)
-        });
-        
+        const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(filmData) });
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Operation failed');
+          if (response.status === 401) { showToast('Please sign in to modify data.', 'error'); return; }
+          throw new Error(data.error || 'Operation failed');
         }
-        
         showToast(isUpdate ? 'Film updated!' : 'Film added!', 'success');
         resetForm();
         loadFilms();
-      } catch (error) {
-        console.error('Error:', error);
-        showToast('Error: ' + error.message, 'error');
+      } catch (err) {
+        showToast(err.message || 'Error', 'error');
       }
     });
 
-    // Edit film
     async function editFilm(id) {
       try {
-        const response = await fetch(`${API_BASE}/${id}`);
+        const response = await fetch(`${API_BASE}/${id}`, fetchOpts());
         const film = await response.json();
-        
         document.getElementById('title').value = film.title || '';
         document.getElementById('year').value = film.year || '';
-        document.getElementById('genre').value = film.genre || '';
+        document.querySelectorAll('#genres-checkboxes input[name="genre"]').forEach(cb => {
+          const g = film.genres && Array.isArray(film.genres) ? film.genres : (film.genre ? [film.genre] : []);
+          cb.checked = g.includes(cb.value);
+        });
+        document.getElementById('rating').value = film.rating !== undefined && film.rating !== null ? film.rating : '';
+        document.getElementById('director').value = film.director || '';
         document.getElementById('poster').value = film.poster || film.posterUrl || '';
         document.getElementById('description').value = film.description || '';
-        
         editingId = id;
         document.getElementById('submit-btn').textContent = 'Update Film';
-        
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } catch (error) {
+      } catch (err) {
         showToast('Error loading film', 'error');
       }
     }
 
-    // Delete film
     async function deleteFilm(id) {
       if (!confirm('Are you sure you want to delete this film?')) return;
-      
       try {
-        const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-        
-        if (!response.ok) {
-          throw new Error('Failed to delete');
-        }
-        
+        const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', ...fetchOpts() });
+        if (response.status === 401) { showToast('Please sign in to modify data.', 'error'); loadFilms(); return; }
+        if (!response.ok) throw new Error('Failed to delete');
         showToast('Film deleted', 'success');
         loadFilms();
-      } catch (error) {
+      } catch (err) {
         showToast('Error deleting film', 'error');
       }
     }
 
-    // Reset form
     function resetForm() {
       document.getElementById('add-film-form').reset();
       editingId = null;
       document.getElementById('submit-btn').textContent = 'Add Film';
     }
 
-    // Get initials
-    function getInitials(title) {
-      return title.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
-    }
-
-    // Show toast
-    function showToast(message, type = 'success') {
+    function getInitials(title) { return String(title).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
+    function showToast(message, type) {
       const toast = document.getElementById('toast');
-      const toastMessage = document.getElementById('toast-message');
-      
-      toastMessage.textContent = message;
-      toast.className = `toast ${type} show`;
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2500);
+      document.getElementById('toast-message').textContent = message;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(() => toast.classList.remove('show'), 2500);
     }
-
-    // Escape HTML
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
+    function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
   </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Movies Management System - Node.js + Express + MongoDB Atlas
 
-A full-stack web application with CRUD operations for managing movies using Node.js, Express, and MongoDB Atlas (native driver).
+Web application with CRUD operations for managing movies using Node.js, Express, and MongoDB Atlas (native driver).
 
 ## Features
 
@@ -323,10 +323,6 @@ All error responses are in JSON format:
 - Button to sort movies by year
 - All operations use fetch() to call API
 - Table updates dynamically after add/update/delete/filter/sort
-
-## License
-
-ISC
 
 ## Authors
 

@@ -27,6 +27,9 @@
       </div>
       
       <div class="nav-actions">
+        <span id="nav-user" class="nav-link hidden" style="font-size:0.875rem;"></span>
+        <a href="/login" id="nav-login" class="nav-link">Sign In</a>
+        <a href="#" id="nav-logout" class="nav-link hidden" onclick="doLogout(event)">Logout</a>
         <a href="/about" class="nav-icon" title="About">?</a>
       </div>
     </div>
@@ -85,23 +88,41 @@
 
   <script>
     const API_BASE = '/api/movies';
-    
-    // Local storage for watchlist and likes
     let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
     let likes = JSON.parse(localStorage.getItem('likes') || '[]');
-    
-    // Current film
     let currentFilm = null;
 
-    // Get film ID from URL
+    function fetchOpts() { return { credentials: 'include' }; }
+
     function getFilmId() {
       const path = window.location.pathname;
       const parts = path.split('/');
       return parts[parts.length - 1];
     }
 
-    // Initialize page
+    async function checkAuth() {
+      try {
+        const res = await fetch('/auth/me', fetchOpts());
+        const navUser = document.getElementById('nav-user');
+        const navLogin = document.getElementById('nav-login');
+        const navLogout = document.getElementById('nav-logout');
+        if (res.ok) {
+          const data = await res.json();
+          navUser.textContent = data.user?.username || '';
+          navUser.classList.remove('hidden');
+          navLogin.classList.add('hidden');
+          navLogout.classList.remove('hidden');
+        } else {
+          navUser.classList.add('hidden');
+          navLogin.classList.remove('hidden');
+          navLogout.classList.add('hidden');
+        }
+      } catch (_) {}
+    }
+    async function doLogout(e) { e.preventDefault(); await fetch('/auth/logout', { method: 'POST', ...fetchOpts() }); window.location.href = '/'; }
+
     document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
       loadFilm();
     });
 
@@ -110,14 +131,15 @@
       const filmId = getFilmId();
       
       try {
-        const response = await fetch(`${API_BASE}/${filmId}`);
+        const response = await fetch(`${API_BASE}/${filmId}`, fetchOpts());
         if (!response.ok) {
           throw new Error('Film not found');
         }
         
         currentFilm = await response.json();
         displayFilm(currentFilm);
-        loadSimilarFilms(currentFilm.genre);
+        const genreForSimilar = (currentFilm.genres && currentFilm.genres[0]) || currentFilm.genre;
+        loadSimilarFilms(genreForSimilar);
         
         // Update page title
         document.title = `${currentFilm.title} (${currentFilm.year || 'N/A'}) | MyMovie`;
@@ -146,19 +168,21 @@
         backdropContainer.innerHTML = `<img class="film-backdrop" src="${film.poster || film.posterUrl}" alt="">`;
       }
       
-      // Info
+      const genresArr = (film.genres && film.genres.length) ? film.genres : (film.genre ? String(film.genre).split(',').map(g => g.trim()).filter(Boolean) : []);
+      const ratingDisplay = (film.rating != null && film.rating !== '') ? Number(film.rating) + ' / 10' : '—';
       const infoEl = document.getElementById('film-info');
       infoEl.innerHTML = `
         <h1>${escapeHtml(film.title)}</h1>
         
         <div class="film-meta">
           <span>${film.year || 'Year unknown'}</span>
-          ${film.genre ? `<span>•</span><span>${escapeHtml(film.genre)}</span>` : ''}
+          ${film.director ? `<span>•</span><span>${escapeHtml(film.director)}</span>` : ''}
+          ${ratingDisplay !== '—' ? `<span>•</span><span>${ratingDisplay}</span>` : ''}
         </div>
         
-        ${film.genre ? `
+        ${genresArr.length ? `
         <div class="film-genres">
-          ${film.genre.split(',').map(g => `<span class="genre-tag">${escapeHtml(g.trim())}</span>`).join('')}
+          ${genresArr.map(g => `<span class="genre-tag">${escapeHtml(g)}</span>`).join('')}
         </div>
         ` : ''}
         
@@ -189,7 +213,7 @@
       if (!genre) return;
       
       try {
-        const response = await fetch(`${API_BASE}?genre=${encodeURIComponent(genre)}`);
+        const response = await fetch(`${API_BASE}?genre=${encodeURIComponent(genre)}`, fetchOpts());
         const movies = await response.json();
         
         // Filter out current film and limit to 6

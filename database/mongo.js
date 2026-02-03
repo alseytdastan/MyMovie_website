@@ -27,4 +27,9 @@ function getDb() {
   return db;
 }
 
-module.exports = { connectToDb, getDb, ObjectId };
+function getClient() {
+  if (!client) throw new Error('Database not initialized');
+  return client;
+}
+
+module.exports = { connectToDb, getDb, getClient, ObjectId };

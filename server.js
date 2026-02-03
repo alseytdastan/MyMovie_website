@@ -1,21 +1,51 @@
 require('dotenv').config();
 
 const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const path = require('path');
 const fs = require('fs');
 
 const { connectToDb } = require('./database/mongo');
 const moviesRouter = require('./routes/movies');
+const authRouter = require('./routes/auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL || 'mongodb://localhost:27017';
+const dbName = process.env.MONGO_DB_NAME || 'mymovie';
+
 console.log('SERVER FILE STARTED');
 console.log('PORT:', PORT);
-console.log('MONGO_URI:', process.env.MONGO_URI ? '(set)' : '(missing)');
-console.log('MONGO_DB_NAME:', process.env.MONGO_DB_NAME || 'mymovie');
+console.log('MONGO_URI:', process.env.MONGO_URI || process.env.MONGO_URL ? '(set)' : '(missing)');
+console.log('MONGO_DB_NAME:', dbName);
+
+// Trust proxy for production (e.g. Render)
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session (cookie: httpOnly, sameSite lax, secure in production)
+const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
+app.use(
+  session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: mongoUri,
+      dbName: dbName,
+      ttl: 14 * 24 * 60 * 60, // 14 days
+    }),
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -81,6 +111,13 @@ app.get('/item/:id', (req, res) =>
   res.redirect(`/films/${req.params.id}`)
 );
 
+// Login page
+app.get('/login', (req, res) =>
+  res.sendFile(path.join(__dirname, 'views', 'login.html'))
+);
+
+// Auth API
+app.use('/auth', authRouter);
 
 // API info
 app.get('/api/info', (req, res) => {
@@ -100,7 +137,7 @@ app.get('/api/info', (req, res) => {
 // Movies API
 app.use('/api/movies', moviesRouter);
 
-// Contact form (saves to local data.json)
+// Contact form saves to local data.json
 app.post('/contact', (req, res) => {
   const { name, email, message } = req.body;
 
@@ -132,14 +169,21 @@ app.post('/contact', (req, res) => {
 
 // 404
 app.use((req, res) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
     res.status(404).json({ error: 'Route not found' });
   } else {
     res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
   }
 });
 
-// ✅ Connect DB first, then start server
+// Central error handler (prevent crash)
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// Connect DB first, then start server
 connectToDb()
   .then(() => {
     console.log('MongoDB connected');

@@ -27,6 +27,9 @@
       </div>
       
       <div class="nav-actions">
+        <span id="nav-user" class="nav-link hidden" style="font-size:0.875rem;"></span>
+        <a href="/login" id="nav-login" class="nav-link">Sign In</a>
+        <a href="#" id="nav-logout" class="nav-link hidden" onclick="doLogout(event)">Logout</a>
         <a href="/about" class="nav-icon" title="About">?</a>
       </div>
     </div>
@@ -111,13 +114,39 @@
 
   <script>
     const API_BASE = '/api/movies';
-    
-    // Local storage for watchlist and likes
     const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
     const likes = JSON.parse(localStorage.getItem('likes') || '[]');
 
-    // Initialize page
+    function fetchOpts() { return { credentials: 'include' }; }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/auth/me', fetchOpts());
+        const navUser = document.getElementById('nav-user');
+        const navLogin = document.getElementById('nav-login');
+        const navLogout = document.getElementById('nav-logout');
+        if (res.ok) {
+          const data = await res.json();
+          navUser.textContent = data.user?.username || '';
+          navUser.classList.remove('hidden');
+          navLogin.classList.add('hidden');
+          navLogout.classList.remove('hidden');
+        } else {
+          navUser.classList.add('hidden');
+          navLogin.classList.remove('hidden');
+          navLogout.classList.add('hidden');
+        }
+      } catch (_) {}
+    }
+
+    async function doLogout(e) {
+      e.preventDefault();
+      await fetch('/auth/logout', { method: 'POST', ...fetchOpts() });
+      window.location.href = '/';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
       loadPopularFilms();
       loadRecentFilms();
       updateStats();
@@ -132,7 +161,7 @@
     // Load popular films (sorted by most recent for now)
     async function loadPopularFilms() {
       try {
-        const response = await fetch(`${API_BASE}?sort=year:desc`);
+        const response = await fetch(`${API_BASE}?sort=year:desc`, fetchOpts());
         const movies = await response.json();
         
         document.getElementById('total-films').textContent = movies.length;
@@ -165,7 +194,7 @@
     // Load recently added films
     async function loadRecentFilms() {
       try {
-        const response = await fetch(`${API_BASE}?sort=createdAt:desc`);
+        const response = await fetch(`${API_BASE}?sort=createdAt:desc`, fetchOpts());
         const movies = await response.json();
         
         const recentGrid = document.getElementById('recent-grid');

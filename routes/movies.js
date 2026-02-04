@@ -18,7 +18,7 @@ function parseObjectId(req, res) {
   return new ObjectId(id);
 }
 
-/** Normalize genres: accept array or string, return array of non-empty strings, max GENRES_MAX. */
+/** Normalize genres  accept array or string, return array of non-empty strings, max GENRES_MAX. */
 function normalizeGenres(genre, genres) {
   let arr = Array.isArray(genres) ? genres : [];
   if (arr.length === 0 && genre != null && genre !== '') {

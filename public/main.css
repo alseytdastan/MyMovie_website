@@ -415,10 +415,6 @@ h3 { font-size: 1.25rem; }
   background-color: var(--accent-blue);
   color: white;
 }
-
-/* ========================================
-   Film Details Page
-   ======================================== */
 .film-header {
   position: relative;
   padding: 3rem 0;
@@ -527,9 +523,6 @@ h3 { font-size: 1.25rem; }
   margin-bottom: 2rem;
 }
 
-/* ========================================
-   Buttons
-   ======================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -585,10 +578,7 @@ h3 { font-size: 1.25rem; }
   background-color: var(--accent-green);
   color: var(--bg-primary);
 }
-
-/* ========================================
-   Filters
-   ======================================== */
+s
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -710,9 +700,6 @@ h3 { font-size: 1.25rem; }
   border-bottom-color: var(--accent-green);
 }
 
-/* ========================================
-   Empty State
-   ======================================== */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -730,9 +717,6 @@ h3 { font-size: 1.25rem; }
   margin-bottom: 0.5rem;
 }
 
-/* ========================================
-   Loading States
-   ======================================== */
 .loading {
   display: flex;
   align-items: center;
@@ -765,9 +749,6 @@ h3 { font-size: 1.25rem; }
   100% { background-position: -200% 0; }
 }
 
-/* ========================================
-   Footer
-   ======================================== */
 .footer {
   background-color: var(--bg-secondary);
   padding: 2rem 0;
@@ -800,9 +781,6 @@ h3 { font-size: 1.25rem; }
   color: var(--text-primary);
 }
 
-/* ========================================
-   About Page
-   ======================================== */
 .about-section {
   margin-bottom: 3rem;
 }
@@ -848,9 +826,7 @@ h3 { font-size: 1.25rem; }
   margin-top: 0.25rem;
 }
 
-/* ========================================
-   Notification Toast
-   ======================================== */
+
 .toast {
   position: fixed;
   bottom: 2rem;
@@ -882,9 +858,6 @@ h3 { font-size: 1.25rem; }
   border-color: var(--accent-red);
 }
 
-/* ========================================
-   Responsive Design
-   ======================================== */
 @media (max-width: 1024px) {
   .film-content {
     grid-template-columns: 250px 1fr;
@@ -972,9 +945,6 @@ h3 { font-size: 1.25rem; }
   }
 }
 
-/* ========================================
-   Utility Classes
-   ======================================== */
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }

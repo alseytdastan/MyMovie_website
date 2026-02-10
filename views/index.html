@@ -204,9 +204,11 @@
     async function loadPopularFilms() {
       try {
         const response = await fetch(`${API_BASE}?sort=year:desc`, fetchOpts());
-        const movies = await response.json();
+        const data = await response.json();
+        const movies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+        const total = (data && typeof data.total === 'number') ? data.total : movies.length;
         
-        document.getElementById('total-films').textContent = movies.length;
+        document.getElementById('total-films').textContent = total;
         
         const popularGrid = document.getElementById('popular-grid');
         if (movies.length === 0) {
@@ -237,7 +239,8 @@
     async function loadRecentFilms() {
       try {
         const response = await fetch(`${API_BASE}?sort=createdAt:desc`, fetchOpts());
-        const movies = await response.json();
+        const data = await response.json();
+        const movies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         
         const recentGrid = document.getElementById('recent-grid');
         if (movies.length === 0) {

@@ -263,9 +263,11 @@
         
         const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
         const response = await fetch(url, fetchOpts());
-        const movies = await response.json();
+        const data = await response.json();
+        const movies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+        const total = (data && typeof data.total === 'number') ? data.total : movies.length;
         
-        countEl.textContent = `${movies.length} film${movies.length !== 1 ? 's' : ''} found`;
+        countEl.textContent = `${total} film${total !== 1 ? 's' : ''} found`;
         
         if (movies.length === 0) {
           grid.innerHTML = `

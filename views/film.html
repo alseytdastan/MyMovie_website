@@ -259,7 +259,8 @@
       
       try {
         const response = await fetch(`${API_BASE}?genre=${encodeURIComponent(genre)}`, fetchOpts());
-        const movies = await response.json();
+        const data = await response.json();
+        const movies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         
         // Filter out current film and limit to 6
         const similar = movies.filter(m => m._id !== currentFilm._id).slice(0, 6);

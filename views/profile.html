@@ -210,7 +210,8 @@
       }
       try {
         const response = await fetch(API_BASE, { credentials: 'include' });
-        allMovies = await response.json();
+        const data = await response.json();
+        allMovies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         
         loadLikedFilms();
         loadWatchlistFilms();

@@ -430,7 +430,8 @@
         if (genre) params.append('genre', genre);
         const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
         const response = await fetch(url, fetchOpts());
-        const films = await response.json();
+        const data = await response.json();
+        const films = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         if (films.length === 0) {
           container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎬</div><h3>No films yet</h3><p>Add your first film using the form above</p></div>';
           return;

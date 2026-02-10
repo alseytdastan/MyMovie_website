@@ -432,6 +432,7 @@
         const params = new URLSearchParams();
         if (sort) params.append('sort', sort);
         if (genre) params.append('genre', genre);
+        params.append('limit', '200');
         const url = params.toString() ? `${API_BASE}?${params}` : API_BASE;
         const response = await fetch(url, fetchOpts());
         const data = await response.json();

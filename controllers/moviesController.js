@@ -36,7 +36,7 @@ function validateRating(value) {
 /** Validate film body for create/update. Returns { errors, data }. */
 function validateFilmBody(body, requireAll) {
   const errors = [];
-  const { title, year, genre, genres, rating, director, poster, posterUrl, description, watchUrl } = body;
+  const { title, year, genre, genres, rating, director, poster, posterUrl, description, trailerUrl, watchUrl } = body;
   const currentYear = new Date().getFullYear();
 
   if (requireAll || title !== undefined) {
@@ -81,6 +81,7 @@ function validateFilmBody(body, requireAll) {
     poster: poster || posterUrl || undefined,
     posterUrl: poster || posterUrl || undefined,
     description: description !== undefined ? (description ? String(description).trim() : null) : undefined,
+    trailerUrl: trailerUrl !== undefined ? (trailerUrl ? String(trailerUrl).trim() : null) : undefined,
     watchUrl: watchUrl !== undefined ? (watchUrl ? String(watchUrl).trim() : null) : undefined,
   };
 
@@ -192,7 +193,7 @@ async function createMovie(req, res) {
   if (validated.errors.length) {
     return res.status(400).json({ message: 'Validation error', errors: validated.errors });
   }
-  const { title, year, genres, rating, director, poster, posterUrl, description, watchUrl } = validated.data;
+  const { title, year, genres, rating, director, poster, posterUrl, description, trailerUrl, watchUrl } = validated.data;
 
   const movieData = {
     title,
@@ -204,7 +205,7 @@ async function createMovie(req, res) {
     poster: poster || posterUrl || null,
     posterUrl: poster || posterUrl || null,
     description: description || null,
-    watchUrl: watchUrl || null,
+    trailerUrl: trailerUrl || watchUrl || null,
     createdAt: new Date(),
   };
 
@@ -241,7 +242,10 @@ async function updateMovie(req, res) {
     updateData.posterUrl = validated.data.posterUrl || null;
   }
   if (validated.data.description !== undefined) updateData.description = validated.data.description;
-  if (validated.data.watchUrl !== undefined) updateData.watchUrl = validated.data.watchUrl;
+  if (validated.data.trailerUrl !== undefined || validated.data.watchUrl !== undefined) {
+    updateData.trailerUrl =
+      validated.data.trailerUrl !== undefined ? validated.data.trailerUrl : validated.data.watchUrl;
+  }
 
   if (Object.keys(updateData).length === 1) {
     return res.status(400).json({ error: 'No fields to update' });

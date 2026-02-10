@@ -209,7 +209,15 @@
         return;
       }
       try {
-        const response = await fetch(API_BASE, { credentials: 'include' });
+        const ids = Array.from(new Set([...likes, ...watchlist]));
+        if (ids.length === 0) {
+          allMovies = [];
+          loadLikedFilms();
+          loadWatchlistFilms();
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}?ids=${encodeURIComponent(ids.join(','))}`, { credentials: 'include' });
         const data = await response.json();
         allMovies = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         

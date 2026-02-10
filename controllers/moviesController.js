@@ -90,6 +90,27 @@ function validateFilmBody(body, requireAll) {
 async function listMovies(req, res) {
   const { title, genre, year, sort, fields } = req.query;
 
+  if (req.query.ids) {
+    const ids = String(req.query.ids)
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .filter((id) => ObjectId.isValid(id))
+      .map((id) => new ObjectId(id));
+
+    if (ids.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    try {
+      const movies = await moviesCollection().find({ _id: { $in: ids } }).toArray();
+      return res.status(200).json(movies);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   const filter = {};
   if (title) filter.title = { $regex: title, $options: 'i' };
   if (genre) {

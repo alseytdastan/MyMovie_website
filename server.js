@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { connectToDb } = require('./database/mongo');
+const { requireAuth } = require('./middleware/auth');
 const moviesRouter = require('./routes/movies');
 const authRouter = require('./routes/auth');
 const userListsRouter = require('./routes/user-lists');
@@ -128,7 +129,7 @@ app.use('/api/user', userListsRouter);
 app.use('/api/movies', moviesRouter);
 
 //contact form
-app.post('/contact', (req, res) => {
+app.post('/contact', requireAuth, (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).send('All fields are required');

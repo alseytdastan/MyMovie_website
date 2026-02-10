@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const { getDb } = require('../database/mongo');
 
 const router = express.Router();
-
+// This route registers a new user
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -80,8 +80,7 @@ router.post('/register', async (req, res) => {
 });
 
 /**
- * POST /auth/logout
- * Destroy session and clear cookie.
+  POST /auth/logout  destroy session and clear cookie.
  */
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {

@@ -259,6 +259,10 @@
           <label for="poster" class="form-label">Poster URL</label>
           <input type="url" id="poster" name="poster" class="form-input" placeholder="https://example.com/poster.jpg" />
           <p class="form-hint">Direct link to the movie poster image</p>
+
+          <label for="watchUrl" class="form-label">Watch URL</label>
+          <input type="url" id="watchUrl" name="watchUrl" class="form-input" placeholder="https://example.com/full-movie" />
+          <p class="form-hint">Link to the full movie (external site)</p>
         </div>
         
         <div class="form-group">
@@ -499,6 +503,7 @@
         rating: rating !== undefined && !Number.isNaN(rating) ? rating : undefined,
         director: document.getElementById('director').value.trim() || undefined,
         posterUrl: document.getElementById('poster').value.trim() || undefined,
+        watchUrl: document.getElementById('watchUrl').value.trim() || undefined,
         description: document.getElementById('description').value.trim() || undefined
       };
       try {
@@ -539,6 +544,7 @@
         document.getElementById('rating').value = film.rating !== undefined && film.rating !== null ? film.rating : '';
         document.getElementById('director').value = film.director || '';
         document.getElementById('poster').value = film.poster || film.posterUrl || '';
+        document.getElementById('watchUrl').value = film.watchUrl || '';
         document.getElementById('description').value = film.description || '';
         editingId = id;
         document.getElementById('submit-btn').textContent = 'Update Film';

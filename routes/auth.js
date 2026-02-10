@@ -36,12 +36,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/**
- * POST /auth/register
- * Body: { username, password }
- * On success: create user, set req.session.user = { id, username }, return { message: "ok" }
- * On validation/auth fail: 400 { message: "Invalid credentials" }
- */
 router.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -79,9 +73,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-/**
-  POST /auth/logout  destroy session and clear cookie.
- */
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -93,10 +84,6 @@ router.post('/logout', (req, res) => {
   });
 });
 
-/**
- * GET /auth/me
- * Return 200 with { user: { id, username } } if logged in, else 401.
- */
 router.get('/me', (req, res) => {
   if (req.session && req.session.user) {
     return res.status(200).json({ user: req.session.user });

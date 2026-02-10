@@ -240,9 +240,11 @@
           ${isLoggedIn ? `
           <button class="btn ${isWatchlisted ? 'btn-primary' : 'btn-secondary'}" onclick="toggleWatchlist('${film._id}')">${isWatchlisted ? '✓ In Watchlist' : '+ Add to Watchlist'}</button>
           <button class="btn ${isLiked ? 'btn-primary' : 'btn-secondary'}" onclick="toggleLike('${film._id}')">♥ ${isLiked ? 'Liked' : 'Like'}</button>
+          ${film.watchUrl ? `<a class="btn btn-secondary" href="${escapeHtml(film.watchUrl)}" target="_blank" rel="noopener">▶ Watch Film</a>` : ''}
           ` : `
           <button class="btn btn-secondary" onclick="window.location.href='/login'">+ Add to Watchlist (Sign in)</button>
           <button class="btn btn-secondary" onclick="window.location.href='/login'">♥ Like (Sign in)</button>
+          ${film.watchUrl ? `<a class="btn btn-secondary" href="${escapeHtml(film.watchUrl)}" target="_blank" rel="noopener">▶ Watch Film</a>` : ''}
           `}
         </div>
         
